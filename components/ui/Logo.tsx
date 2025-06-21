@@ -1,7 +1,7 @@
 import React from 'react'
 
 interface LogoProps {
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
   className?: string
 }
 
@@ -9,7 +9,8 @@ export function Logo({ size = 'md', className = '' }: LogoProps) {
   const sizeClasses = {
     sm: 'w-24 h-24',
     md: 'w-32 h-32',
-    lg: 'w-40 h-40'
+    lg: 'w-40 h-40',
+    xl: 'w-48 h-48'
   }
 
   return (
@@ -23,26 +24,10 @@ export function Logo({ size = 'md', className = '' }: LogoProps) {
               <stop offset="60%" stopColor="#ff8c00" />
               <stop offset="100%" stopColor="#ff4500" />
             </radialGradient>
-            <linearGradient id="body-metal" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#3a4a63" />
-              <stop offset="50%" stopColor="#2c3a4f" />
-              <stop offset="100%" stopColor="#1e2a3a" />
-            </linearGradient>
-            <linearGradient id="horn-metal" x1="0.5" y1="0" x2="0.5" y2="1">
-              <stop offset="0%" stopColor="#2c3a4f" />
-              <stop offset="100%" stopColor="#1e2a3a" />
-            </linearGradient>
-            <linearGradient id="shield-border" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#7a8eb3" />
-              <stop offset="100%" stopColor="#4d5f7a" />
-            </linearGradient>
           </defs>
 
-          {/* Hexagonal Shield Body */}
-          <path d="M100 50 L150 75 L150 125 L100 150 L50 125 L50 75 Z" fill="url(#body-metal)" stroke="url(#shield-border)" strokeWidth="3"/>
-          
-          {/* Fiery Eye of Sentinel - Centered and Enlarged */}
-          <g className="sauron-eye" transform="scale(1.25)">
+          {/* Fiery Eye of Sentinel - Centered */}
+          <g className="sauron-eye">
             <path d="M75 100 C 90 80, 110 80, 125 100 C 110 120, 90 120, 75 100 Z" fill="url(#eye-fire)" />
             <ellipse cx="100" cy="100" rx="4" ry="18" fill="#0d1117" stroke="#111" strokeWidth="1.5"/>
           </g>
@@ -67,7 +52,8 @@ export function LogoIcon({ size = 'md', className = '' }: LogoProps) {
   const sizeClasses = {
     sm: 'w-24 h-24',
     md: 'w-32 h-32',
-    lg: 'w-40 h-40'
+    lg: 'w-40 h-40',
+    xl: 'w-48 h-48'
   }
 
   return (
@@ -79,26 +65,10 @@ export function LogoIcon({ size = 'md', className = '' }: LogoProps) {
               <stop offset="60%" stopColor="#ff8c00" />
               <stop offset="100%" stopColor="#ff4500" />
             </radialGradient>
-            <linearGradient id="body-metal" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#3a4a63" />
-              <stop offset="50%" stopColor="#2c3a4f" />
-              <stop offset="100%" stopColor="#1e2a3a" />
-            </linearGradient>
-            <linearGradient id="horn-metal" x1="0.5" y1="0" x2="0.5" y2="1">
-              <stop offset="0%" stopColor="#2c3a4f" />
-              <stop offset="100%" stopColor="#1e2a3a" />
-            </linearGradient>
-            <linearGradient id="shield-border" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#7a8eb3" />
-              <stop offset="100%" stopColor="#4d5f7a" />
-            </linearGradient>
           </defs>
 
-          {/* Hexagonal Shield Body */}
-          <path d="M100 50 L150 75 L150 125 L100 150 L50 125 L50 75 Z" fill="url(#body-metal)" stroke="url(#shield-border)" strokeWidth="3"/>
-          
-          {/* Fiery Eye of Sentinel - Centered and Enlarged */}
-          <g className="sauron-eye" transform="scale(1.25)">
+          {/* Fiery Eye of Sentinel - Centered */}
+          <g className="sauron-eye">
             <path d="M75 100 C 90 80, 110 80, 125 100 C 110 120, 90 120, 75 100 Z" fill="url(#eye-fire)" />
             <ellipse cx="100" cy="100" rx="4" ry="18" fill="#0d1117" stroke="#111" strokeWidth="1.5"/>
           </g>

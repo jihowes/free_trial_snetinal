@@ -55,6 +55,17 @@ module.exports = {
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))',
         },
+        // Middle-earth fantasy theme colors
+        fantasy: {
+          obsidian: '#0f0f0f',
+          charcoal: '#1a1a1a',
+          ash: '#2d2d2d',
+          crimson: '#d93e30',
+          molten: '#e25822',
+          gold: '#f4d03f',
+          ember: '#ff6b35',
+          shadow: '#1e1e1e',
+        },
       },
     },
   },
