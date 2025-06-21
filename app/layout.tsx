@@ -1,25 +1,43 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Outfit, Inter } from 'next/font/google'
 import './globals.css'
+import { ThemeProvider } from '@/components/ThemeProvider'
+import { Toaster } from 'react-hot-toast'
 
-const inter = Inter({ subsets: ['latin'] })
+const outfit = Outfit({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-outfit',
+})
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+})
 
 export const metadata: Metadata = {
   title: 'Free Trial Sentinel',
-  description: 'The All-Seeing Eye of your Free Trials'
+  description: 'The All-Seeing Eye of your Free Trials',
 }
 
 export default function RootLayout({
-  children
+  children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className={inter.className}>
-        <main className="min-h-screen flex flex-col items-center justify-center">
+    <html lang="en" className={`${outfit.variable} ${inter.variable}`} suppressHydrationWarning>
+      <body>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Toaster position="top-center" />
           {children}
-        </main>
+        </ThemeProvider>
       </body>
     </html>
   )
