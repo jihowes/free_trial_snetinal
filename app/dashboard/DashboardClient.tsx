@@ -1,17 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { format, differenceInDays } from 'date-fns'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/Button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { User } from '@supabase/supabase-js'
 import { LogoIcon } from '@/components/ui/Logo'
-import { OctopusMascot, OctopusWithMessage, FloatingOctopus } from '@/components/ui/OctopusMascot'
-import { Trash2, PlusCircle, LogOut, AlertTriangle, CheckCircle, Clock, Sparkles } from 'lucide-react'
+import { LogOut, Plus, Search, Filter } from 'lucide-react'
 import FantasyBackgroundWrapper from '@/components/FantasyBackgroundWrapper'
+import { DashboardHeader } from '@/components/DashboardHeader'
+import { TrialCard } from '@/components/TrialCard'
+import { EmptyState } from '@/components/EmptyState'
 
 interface Trial {
   id: string
@@ -27,6 +27,10 @@ interface DashboardClientProps {
 export default function DashboardClient({ trials, user }: DashboardClientProps) {
   const [loading, setLoading] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [sortBy, setSortBy] = useState<'expiry' | 'name'>('expiry')
+  const [showToast, setShowToast] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
   const router = useRouter()
   const supabase = createClientComponentClient()
 
@@ -41,50 +45,46 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
     try {
       await supabase.from('trials').delete().eq('id', trialId)
       router.refresh()
+      showToastMessage('Trial deleted successfully!')
     } catch (error) {
       console.error('Error deleting trial:', error)
+      showToastMessage('Failed to delete trial. Please try again.')
     } finally {
       setLoading(false)
       setDeletingId(null)
     }
   }
 
-  const getTrialStatus = (endDate: string) => {
-    const end = new Date(endDate)
-    const now = new Date()
-    const daysLeft = differenceInDays(end, now)
-
-    if (daysLeft < 0) {
-      return { text: 'Expired', color: 'text-gray-500', icon: <AlertTriangle className="h-4 w-4 mr-2" /> }
-    }
-    if (daysLeft <= 1) {
-      return { text: 'Expires Today', color: 'text-red-500', icon: <AlertTriangle className="h-4 w-4 mr-2" /> }
-    }
-    if (daysLeft <= 7) {
-      return { text: `Expires in ${daysLeft} days`, color: 'text-yellow-500', icon: <Clock className="h-4 w-4 mr-2" /> }
-    }
-    return { text: `Expires in ${daysLeft} days`, color: 'text-green-500', icon: <CheckCircle className="h-4 w-4 mr-2" /> }
+  const showToastMessage = (message: string) => {
+    setToastMessage(message)
+    setShowToast(true)
+    setTimeout(() => setShowToast(false), 3000)
   }
 
-  const getWelcomeMessage = () => {
-    const hour = new Date().getHours()
-    if (hour < 12) return "Good morning! Ready to protect your trials?"
-    if (hour < 18) return "Good afternoon! How are your trials doing?"
-    return "Good evening! Time to check on your trials!"
-  }
+  // Filter and sort trials
+  const filteredAndSortedTrials = trials
+    .filter(trial => 
+      trial.service_name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortBy === 'expiry') {
+        return new Date(a.end_date).getTime() - new Date(b.end_date).getTime()
+      } else {
+        return a.service_name.localeCompare(b.service_name)
+      }
+    })
 
-  const getOctopusVariant = () => {
-    const urgentTrials = trials.filter(trial => {
-      const end = new Date(trial.end_date)
-      const now = new Date()
-      const daysLeft = differenceInDays(end, now)
-      return daysLeft <= 7 && daysLeft >= 0
-    }).length
-
-    if (urgentTrials > 0) return 'excited'
-    if (trials.length === 0) return 'sleepy'
-    return 'happy'
-  }
+  // Get next expiring trial for header
+  const nextExpiringTrial = trials.length > 0 ? (() => {
+    const sorted = [...trials].sort((a, b) => 
+      new Date(a.end_date).getTime() - new Date(b.end_date).getTime()
+    )
+    const next = sorted[0]
+    const daysLeft = Math.ceil(
+      (new Date(next.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+    )
+    return { service_name: next.service_name, daysLeft }
+  })() : undefined
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -104,149 +104,138 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
       y: 0,
       transition: {
         duration: 0.5,
-        ease: "easeOut"
+        ease: "easeOut" as const
       }
     }
   }
 
   return (
     <FantasyBackgroundWrapper showEmbers={true} showEyeGlow={true} showFloatingEye={true}>
-      <div className="w-full max-w-6xl mx-auto p-4 md:p-8 relative overflow-hidden">
-        {/* Floating background octopuses removed */}
-
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <motion.header variants={itemVariants} className="flex justify-between items-center mb-8 pb-4 border-b border-border">
-            <div className="flex items-center gap-4">
-              <LogoIcon size="sm" />
-              <h1 className="text-2xl font-bold text-white font-outfit">Trial Sentinel</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <Button 
-                onClick={() => router.push('/dashboard/add-trial')}
-                className="bg-gradient-to-r from-fantasy-crimson to-fantasy-molten hover:from-fantasy-molten hover:to-fantasy-crimson text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-fantasy-crimson/25"
-              >
-                <PlusCircle className="h-4 w-4 mr-2" />
-                Add New Trial
-              </Button>
-              <Button variant="secondary" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </motion.header>
-
-          {/* Welcome Section */}
-          <motion.div variants={itemVariants} className="mb-8">
-            <div className="flex items-center justify-between bg-gradient-to-r from-fantasy-charcoal/50 to-fantasy-ash/50 rounded-lg p-6 border border-border/50">
-              <div className="flex items-center space-x-4">
-                <OctopusMascot size="lg" variant={getOctopusVariant()} />
-                <div>
-                  <h2 className="text-xl font-semibold text-white font-outfit">
-                    Welcome back, {user.email?.split('@')[0]}!
-                  </h2>
-                  <p className="text-muted-foreground">{getWelcomeMessage()}</p>
-                </div>
+      <div className="min-h-screen bg-gradient-to-br from-fantasy-obsidian via-fantasy-charcoal to-fantasy-shadow">
+        <div className="w-full max-w-7xl mx-auto p-4 md:p-8">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            {/* Header */}
+            <motion.header variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-3 border-b border-slate-700/50 mt-2">
+              <div className="flex items-center gap-4 mb-3 md:mb-0">
+                <LogoIcon size="xl" />
               </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-fantasy-crimson">{trials.length}</div>
-                <div className="text-sm text-muted-foreground">Active Trials</div>
+              <div className="flex items-center gap-3">
+                <Button 
+                  onClick={() => router.push('/dashboard/add-trial')}
+                  className="bg-gradient-to-r from-fantasy-crimson to-fantasy-molten hover:from-fantasy-molten hover:to-fantasy-crimson text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-fantasy-crimson/25"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add New Trial
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  onClick={handleLogout}
+                  className="text-slate-400 hover:text-white hover:bg-slate-700/50"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
               </div>
-            </div>
-          </motion.div>
+            </motion.header>
 
-          <main>
-            {trials.length === 0 ? (
-              <motion.div variants={itemVariants}>
-                <Card className="text-center py-20 bg-card/50 border-0 shadow-xl">
-                  <CardHeader>
-                    <div className="flex justify-center mb-4">
-                      <OctopusMascot size="xl" variant="sleepy" />
-                    </div>
-                    <h2 className="text-2xl font-semibold font-outfit">No Trials Found</h2>
-                    <p className="text-muted-foreground mt-2">
-                      Your octopus guardian is ready to protect your trials! Add your first one to get started.
-                    </p>
-                  </CardHeader>
-                  <CardContent>
-                    <Button 
-                      onClick={() => router.push('/dashboard/add-trial')}
-                      className="bg-gradient-to-r from-fantasy-crimson to-fantasy-molten hover:from-fantasy-molten hover:to-fantasy-crimson text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-fantasy-crimson/25"
-                    >
-                      <PlusCircle className="h-4 w-4 mr-2" />
-                      Add Your First Trial
-                    </Button>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ) : (
+            {/* Dashboard Header with greeting and stats */}
+            <DashboardHeader 
+              userName={user.email?.split('@')[0] || 'User'}
+              totalTrials={trials.length}
+              nextExpiringTrial={nextExpiringTrial}
+            />
+
+            {/* Search and Sort Controls */}
+            {trials.length > 0 && (
               <motion.div 
                 variants={itemVariants}
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                className="mb-6 flex flex-col sm:flex-row gap-4"
               >
-                {trials.map((trial, index) => {
-                  const status = getTrialStatus(trial.end_date)
-                  return (
-                    <motion.div
-                      key={trial.id}
-                      variants={itemVariants}
-                      whileHover={{ y: -5, scale: 1.02 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <Card className="flex flex-col justify-between h-full border-0 shadow-xl bg-card/50 backdrop-blur-sm hover:shadow-2xl transition-all duration-300">
-                        <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="font-outfit">{trial.service_name}</CardTitle>
-                            <OctopusMascot size="sm" variant="default" animated={false} />
-                          </div>
-                          <CardDescription>
-                            Ends on {format(new Date(trial.end_date), 'PPP')}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className={`flex items-center text-sm font-medium ${status.color}`}>
-                            {status.icon}
-                            <span>{status.text}</span>
-                          </div>
-                        </CardContent>
-                        <div className="p-6 pt-0">
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            className="w-full"
-                            onClick={() => handleDeleteTrial(trial.id)}
-                            disabled={loading && deletingId === trial.id}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            {loading && deletingId === trial.id ? 'Deleting...' : 'Delete'}
-                          </Button>
-                        </div>
-                      </Card>
-                    </motion.div>
-                  )
-                })}
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Search trials..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-fantasy-crimson/50 focus:border-fantasy-crimson/50"
+                  />
+                </div>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'expiry' | 'name')}
+                  className="px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-fantasy-crimson/50 focus:border-fantasy-crimson/50"
+                >
+                  <option value="expiry">Sort by Expiry</option>
+                  <option value="name">Sort by Name</option>
+                </select>
               </motion.div>
             )}
-          </main>
 
-          {/* Bottom encouragement */}
-          {trials.length > 0 && (
-            <motion.div 
-              variants={itemVariants}
-              className="mt-12 text-center"
-            >
-              <OctopusWithMessage 
-                message="Your trials are safe with me! 🐙✨" 
-                size="md"
-                className="justify-center"
-              />
-            </motion.div>
-          )}
-        </motion.div>
+            {/* Main Content */}
+            <main>
+              <AnimatePresence mode="wait">
+                {trials.length === 0 ? (
+                  <EmptyState key="empty" />
+                ) : filteredAndSortedTrials.length === 0 ? (
+                  <motion.div
+                    key="no-results"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="text-center py-16"
+                  >
+                    <div className="text-slate-400 mb-4">
+                      <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <h3 className="text-xl font-semibold text-white mb-2">No trials found</h3>
+                      <p>Try adjusting your search terms</p>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="trials-grid"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                  >
+                    <AnimatePresence>
+                      {filteredAndSortedTrials.map((trial, index) => (
+                        <TrialCard
+                          key={trial.id}
+                          id={trial.id}
+                          service_name={trial.service_name}
+                          end_date={trial.end_date}
+                          onDelete={handleDeleteTrial}
+                          index={index}
+                        />
+                      ))}
+                    </AnimatePresence>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </main>
+          </motion.div>
+        </div>
       </div>
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            className="fixed bottom-4 right-4 bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 shadow-lg z-50"
+          >
+            <p className="text-white text-sm">{toastMessage}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </FantasyBackgroundWrapper>
   )
 } 
