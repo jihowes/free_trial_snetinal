@@ -19,12 +19,17 @@ serve(async (req) => {
 
     // Get current date and calculate target dates
     const now = new Date()
-    const oneDayFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+    
+    // Calculate end of day for tomorrow and 7 days from now
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
     const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
-
-    // Format dates for database query
-    const oneDayDate = oneDayFromNow.toISOString().split('T')[0]
-    const sevenDaysDate = sevenDaysFromNow.toISOString().split('T')[0]
+    
+    // Set to end of day (23:59:59.999)
+    const tomorrowEndOfDay = new Date(tomorrow)
+    tomorrowEndOfDay.setHours(23, 59, 59, 999)
+    
+    const sevenDaysEndOfDay = new Date(sevenDaysFromNow)
+    sevenDaysEndOfDay.setHours(23, 59, 59, 999)
 
     // Query for trials that expire in 1 or 7 days and haven't been notified recently
     const { data: trials, error } = await supabase
@@ -35,7 +40,7 @@ serve(async (req) => {
           email
         )
       `)
-      .or(`end_date.eq.${oneDayDate},end_date.eq.${sevenDaysDate}`)
+      .or(`end_date.eq.${tomorrowEndOfDay.toISOString()},end_date.eq.${sevenDaysEndOfDay.toISOString()}`)
       .or('last_notified.is.null,last_notified.lt.' + new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString())
 
     if (error) {

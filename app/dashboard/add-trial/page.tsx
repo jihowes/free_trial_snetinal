@@ -51,11 +51,19 @@ export default function AddTrialPage() {
 
       console.log('Inserting trial for user:', user.id)
 
+      // Set the end date to the end of the selected day (23:59:59)
+      const endOfDay = new Date(endDate)
+      endOfDay.setHours(23, 59, 59, 999)
+      const endDateWithTime = endOfDay.toISOString()
+
+      console.log('Original date:', endDate)
+      console.log('End of day date:', endDateWithTime)
+
       // Insert the trial
       const { data, error } = await supabase.from('trials').insert({
         user_id: user.id,
         service_name: serviceName,
-        end_date: endDate,
+        end_date: endDateWithTime,
       })
 
       if (error) {
@@ -158,12 +166,15 @@ export default function AddTrialPage() {
                   transition={{ delay: 0.3 }}
                 >
                   <Input
-                    label="End Date"
+                    label="End Date (expires at end of day)"
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                     required
                   />
+                  <p className="text-xs text-slate-400 mt-1">
+                    Your trial will expire at 11:59 PM on the selected date
+                  </p>
                 </motion.div>
 
                 {error && (

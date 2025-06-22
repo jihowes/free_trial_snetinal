@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Trash2, Calendar, AlertTriangle } from 'lucide-react'
+import { Trash2, Calendar } from 'lucide-react'
 import { Button } from './ui/Button'
 import { Card } from './ui/Card'
 import { CountdownBadge } from './CountdownBadge'
@@ -28,6 +28,9 @@ export function TrialCard({ id, service_name, end_date, onDelete, index }: Trial
   
   const isUrgent = daysLeft <= 1
   const isWarning = daysLeft <= 7 && daysLeft > 1
+
+  // Pulse if expiring in next 3 days or expired in last 7 days
+  const shouldPulse = (daysLeft >= 0 && daysLeft <= 2) || (daysLeft < 0 && daysLeft >= -7)
 
   if (!mounted) {
     return (
@@ -113,7 +116,7 @@ export function TrialCard({ id, service_name, end_date, onDelete, index }: Trial
                     {service_name}
                   </h3>
                   <p className="text-sm text-slate-400">
-                    Expires {endDate.toLocaleDateString('en-US', { 
+                    {daysLeft < 0 ? 'Expired' : 'Expires'} {endDate.toLocaleDateString('en-US', { 
                       weekday: 'long', 
                       year: 'numeric', 
                       month: 'long', 
@@ -148,20 +151,6 @@ export function TrialCard({ id, service_name, end_date, onDelete, index }: Trial
               </Button>
             </motion.div>
           </div>
-          
-          {/* Urgency indicator */}
-          {isUrgent && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="mt-3 flex items-center space-x-2 p-2 rounded-lg bg-red-500/10 border border-red-500/20"
-            >
-              <AlertTriangle className="w-4 h-4 text-red-400" />
-              <span className="text-sm text-red-400 font-medium">
-                Trial expires today!
-              </span>
-            </motion.div>
-          )}
         </div>
       </Card>
     </motion.div>

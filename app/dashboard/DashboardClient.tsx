@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/Button'
 import { User } from '@supabase/supabase-js'
 import { LogoIcon } from '@/components/ui/Logo'
-import { LogOut, Plus, Search, Filter } from 'lucide-react'
+import { LogOut, Plus, Search, Filter, RefreshCw } from 'lucide-react'
 import FantasyBackgroundWrapper from '@/components/FantasyBackgroundWrapper'
 import { DashboardHeader } from '@/components/DashboardHeader'
 import { TrialCard } from '@/components/TrialCard'
@@ -37,8 +37,73 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
   const [showOutcomeModal, setShowOutcomeModal] = useState(false)
   const [expiredTrial, setExpiredTrial] = useState<Trial | null>(null)
   const [processedTrials, setProcessedTrials] = useState<Set<string>>(new Set())
+  const [currentTrials, setCurrentTrials] = useState<Trial[]>(trials)
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
+  const [refreshing, setRefreshing] = useState(false)
+  const [currentTime, setCurrentTime] = useState<Date>(new Date())
   const router = useRouter()
   const supabase = createClientComponentClient()
+
+  // Update current time every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  // Refresh trial data periodically and when date changes
+  useEffect(() => {
+    const refreshTrials = async () => {
+      try {
+        setRefreshing(true)
+        const { data: freshTrials, error } = await supabase
+          .from('trials')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('end_date', { ascending: true })
+        
+        if (!error && freshTrials) {
+          setCurrentTrials(freshTrials)
+          setLastUpdated(new Date())
+        }
+      } catch (error) {
+        console.error('Error refreshing trials:', error)
+      } finally {
+        setRefreshing(false)
+      }
+    }
+
+    // Refresh immediately
+    refreshTrials()
+
+    // Set up periodic refresh (every 2 minutes for more frequent updates)
+    const interval = setInterval(refreshTrials, 2 * 60 * 1000)
+
+    // Set up daily refresh at midnight
+    const now = new Date()
+    const tomorrow = new Date(now)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(0, 0, 0, 0)
+    const timeUntilMidnight = tomorrow.getTime() - now.getTime()
+
+    const midnightTimeout = setTimeout(() => {
+      refreshTrials()
+      // After first midnight refresh, set up daily interval
+      setInterval(refreshTrials, 24 * 60 * 60 * 1000)
+    }, timeUntilMidnight)
+
+    return () => {
+      clearInterval(interval)
+      clearTimeout(midnightTimeout)
+    }
+  }, [user.id, supabase])
+
+  // Update currentTrials when props change
+  useEffect(() => {
+    setCurrentTrials(trials)
+  }, [trials])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -71,7 +136,7 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
   useEffect(() => {
     try {
       const now = new Date()
-      const expiredTrials = trials.filter(trial => {
+      const expiredTrials = currentTrials.filter(trial => {
         const endDate = new Date(trial.end_date)
         return endDate < now && trial.outcome === 'active' && !processedTrials.has(trial.id)
       })
@@ -85,7 +150,7 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
     } catch (error) {
       console.error('Error in expired trials check:', error)
     }
-  }, [trials, showOutcomeModal, expiredTrial, processedTrials])
+  }, [currentTrials, showOutcomeModal, expiredTrial, processedTrials])
 
   const handleOutcomeSelect = async (trialId: string, outcome: 'kept' | 'cancelled' | 'expired') => {
     try {
@@ -95,7 +160,7 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
         .eq('id', trialId)
       
       // Add trial to processed set to prevent modal from showing again
-      setProcessedTrials(prev => new Set([...prev, trialId]))
+      setProcessedTrials(prev => new Set([...Array.from(prev), trialId]))
       
       // Close the modal immediately
       setShowOutcomeModal(false)
@@ -114,7 +179,7 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
   }
 
   // Filter and sort trials
-  const filteredAndSortedTrials = trials
+  const filteredAndSortedTrials = currentTrials
     .filter(trial => {
       // Search filter
       const matchesSearch = trial.service_name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -151,8 +216,8 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
     })
 
   // Get next expiring trial for header
-  const nextExpiringTrial = trials.length > 0 ? (() => {
-    const sorted = [...trials].sort((a, b) => 
+  const nextExpiringTrial = currentTrials.length > 0 ? (() => {
+    const sorted = [...currentTrials].sort((a, b) => 
       new Date(a.end_date).getTime() - new Date(b.end_date).getTime()
     )
     const next = sorted[0]
@@ -185,6 +250,29 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
     }
   }
 
+  // Manual refresh function
+  const handleManualRefresh = async () => {
+    try {
+      setRefreshing(true)
+      const { data: freshTrials, error } = await supabase
+        .from('trials')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('end_date', { ascending: true })
+      
+      if (!error && freshTrials) {
+        setCurrentTrials(freshTrials)
+        setLastUpdated(new Date())
+        showToastMessage('Trials refreshed!')
+      }
+    } catch (error) {
+      console.error('Error refreshing trials:', error)
+      showToastMessage('Failed to refresh trials')
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
   return (
     <FantasyBackgroundWrapper showEmbers={true} showEyeGlow={true} showFloatingEye={true}>
       <div className="min-h-screen bg-gradient-to-br from-fantasy-obsidian via-fantasy-charcoal to-fantasy-shadow">
@@ -198,6 +286,10 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
             <motion.header variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-3 border-b border-slate-700/50 mt-2">
               <div className="flex items-center gap-4 mb-3 md:mb-0">
                 <LogoIcon size="xl" />
+                <div className="text-xs text-slate-400 space-y-1">
+                  <div>Current time: {currentTime.toLocaleTimeString()} ({Intl.DateTimeFormat().resolvedOptions().timeZone})</div>
+                  <div>Last updated: {lastUpdated.toLocaleTimeString()}</div>
+                </div>
               </div>
               <div className="flex items-center gap-3">
                 <Button 
@@ -206,6 +298,15 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add New Trial
+                </Button>
+                <Button 
+                  variant="secondary"
+                  onClick={handleManualRefresh}
+                  disabled={refreshing}
+                  className="text-slate-400 hover:text-white hover:bg-slate-700/50"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                  {refreshing ? 'Refreshing...' : 'Refresh'}
                 </Button>
                 <Button 
                   variant="secondary" 
@@ -221,13 +322,13 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
             {/* Dashboard Header with greeting and stats */}
             <DashboardHeader 
               userName={user.email?.split('@')[0] || 'User'}
-              totalTrials={trials.length}
-              trials={trials}
+              totalTrials={currentTrials.length}
+              trials={currentTrials}
               nextExpiringTrial={nextExpiringTrial}
             />
 
             {/* Search and Sort Controls */}
-            {trials.length > 0 && (
+            {currentTrials.length > 0 && (
               <motion.div 
                 variants={itemVariants}
                 className="mb-6 space-y-4"
@@ -283,7 +384,7 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
             {/* Main Content */}
             <main className="space-y-8">
               <AnimatePresence mode="wait">
-                {trials.length === 0 ? (
+                {currentTrials.length === 0 ? (
                   <EmptyState key="empty" />
                 ) : filteredAndSortedTrials.length === 0 ? (
                   <motion.div
@@ -326,7 +427,7 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
               {/* Trial Outcome History (Graveyard) */}
               {(() => {
                 const now = new Date()
-                const pastTrials = trials.filter(trial => new Date(trial.end_date) < now)
+                const pastTrials = currentTrials.filter(trial => new Date(trial.end_date) < now)
                 
                 if (pastTrials.length > 0) {
                   return (

@@ -7,6 +7,8 @@ A web application to track free software trials and receive email reminders befo
 - 🔐 **User Authentication**: Secure signup and login with Supabase Auth
 - 📊 **Trial Management**: Add, view, and delete your free trials
 - ⏰ **Smart Reminders**: Get email notifications 7 days and 1 day before trial expiry
+- 🕐 **End-of-Day Expiry**: All trials expire at 11:59 PM on their end date for consistency
+- 🔄 **Real-Time Updates**: Automatic data refresh every 2 minutes with manual refresh option
 - 🎨 **Modern UI**: Clean, dark-themed interface built with Tailwind CSS
 - 📱 **Responsive Design**: Works perfectly on desktop and mobile devices
 
@@ -130,6 +132,7 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 
 1. **Sign Up**: Create a new account with your email
 2. **Add Trials**: Click "Add New Trial" and enter the service name and end date
+   - Note: All trials expire at 11:59 PM on the selected date for consistency
 3. **Track Trials**: View all your trials on the dashboard with expiry status
 4. **Get Reminders**: Receive email notifications 7 days and 1 day before expiry
 5. **Manage Trials**: Delete trials you no longer need to track
