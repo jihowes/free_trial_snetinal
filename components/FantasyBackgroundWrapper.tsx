@@ -20,11 +20,16 @@ export default function FantasyBackgroundWrapper({
 }: FantasyBackgroundWrapperProps) {
   const [isHoveringEye, setIsHoveringEye] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
+  const [mounted, setMounted] = useState(false)
   const prefersReducedMotion = useReducedMotion()
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Ambient sound effect (optional)
   useEffect(() => {
-    if (!enableSound || isMuted || prefersReducedMotion) return
+    if (!enableSound || isMuted || prefersReducedMotion || !mounted) return
 
     // Create ambient audio context for fire crackle effect
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
@@ -54,19 +59,34 @@ export default function FantasyBackgroundWrapper({
       crackle.stop()
       audioContext.close()
     }
-  }, [enableSound, isMuted, prefersReducedMotion])
+  }, [enableSound, isMuted, prefersReducedMotion, mounted])
 
-  // Ember particle animation
+  // Ember particle animation - fixed positions to prevent hydration issues
+  const emberPositions = [
+    { left: '10%', top: '20%' },
+    { left: '20%', top: '60%' },
+    { left: '30%', top: '40%' },
+    { left: '40%', top: '80%' },
+    { left: '50%', top: '30%' },
+    { left: '60%', top: '70%' },
+    { left: '70%', top: '50%' },
+    { left: '80%', top: '20%' },
+    { left: '90%', top: '60%' },
+    { left: '15%', top: '80%' },
+    { left: '25%', top: '10%' },
+    { left: '85%', top: '40%' }
+  ]
+
   const emberVariants = {
     float: {
       y: [-20, -100],
-      x: [0, Math.random() * 40 - 20],
+      x: [0, 20],
       opacity: [0, 1, 0],
       scale: [0.5, 1, 0.5],
       transition: {
-        duration: 3 + Math.random() * 2,
+        duration: 3,
         repeat: Infinity,
-        ease: "easeOut"
+        ease: "easeOut" as const
       }
     }
   }
@@ -79,7 +99,7 @@ export default function FantasyBackgroundWrapper({
       transition: {
         duration: 4,
         repeat: Infinity,
-        ease: "easeInOut"
+        ease: "easeInOut" as const
       }
     }
   }
@@ -92,7 +112,7 @@ export default function FantasyBackgroundWrapper({
       transition: {
         duration: 6,
         repeat: Infinity,
-        ease: "easeInOut"
+        ease: "easeInOut" as const
       }
     },
     flare: {
@@ -104,18 +124,18 @@ export default function FantasyBackgroundWrapper({
       ],
       transition: {
         duration: 0.3,
-        ease: "easeInOut"
+        ease: "easeInOut" as const
       }
     }
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className="relative min-h-screen">
       {/* Base fantasy gradient background */}
       <div className="fixed inset-0 bg-gradient-to-br from-black via-gray-900 via-red-950 to-red-900" />
       
       {/* Radial eye glow effect */}
-      {showEyeGlow && (
+      {showEyeGlow && mounted && (
         <div className="fixed inset-0 pointer-events-none">
           <motion.div
             className="absolute top-1/2 left-1/2 w-96 h-96 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-20"
@@ -144,15 +164,15 @@ export default function FantasyBackgroundWrapper({
       </div>
 
       {/* Animated ember particles */}
-      {showEmbers && !prefersReducedMotion && (
+      {showEmbers && mounted && !prefersReducedMotion && (
         <div className="fixed inset-0 pointer-events-none">
-          {[...Array(12)].map((_, i) => (
+          {emberPositions.map((position, i) => (
             <motion.div
               key={i}
               className="absolute w-1 h-1 bg-gradient-to-r from-orange-400 to-red-500 rounded-full"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
+                left: position.left,
+                top: position.top,
               }}
               variants={emberVariants}
               animate="float"
@@ -163,7 +183,7 @@ export default function FantasyBackgroundWrapper({
       )}
 
       {/* Floating eye orb (easter egg) */}
-      {showFloatingEye && (
+      {showFloatingEye && mounted && (
         <motion.div
           className="fixed top-8 right-8 w-12 h-12 pointer-events-none z-10"
           variants={floatingEyeVariants}
@@ -181,7 +201,7 @@ export default function FantasyBackgroundWrapper({
       )}
 
       {/* Sound toggle (if enabled) */}
-      {enableSound && (
+      {enableSound && mounted && (
         <button
           onClick={() => setIsMuted(!isMuted)}
           className="fixed top-4 left-4 z-20 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"

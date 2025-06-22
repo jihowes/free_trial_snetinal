@@ -1,19 +1,27 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Clock, AlertTriangle, CheckCircle } from 'lucide-react'
+import { Clock, AlertTriangle, CheckCircle, DollarSign, XCircle, Calendar } from 'lucide-react'
 import { useEffect, useState } from 'react'
+
+interface Trial {
+  id: string
+  service_name: string
+  end_date: string
+  status?: 'active' | 'cancelled' | 'missed'
+}
 
 interface DashboardHeaderProps {
   userName: string
   totalTrials: number
+  trials: Trial[]
   nextExpiringTrial?: {
     service_name: string
     daysLeft: number
   }
 }
 
-export function DashboardHeader({ userName, totalTrials, nextExpiringTrial }: DashboardHeaderProps) {
+export function DashboardHeader({ userName, totalTrials, trials, nextExpiringTrial }: DashboardHeaderProps) {
   const [greeting, setGreeting] = useState('')
   const [currentTime, setCurrentTime] = useState<Date | null>(null)
   const [mounted, setMounted] = useState(false)
@@ -26,11 +34,11 @@ export function DashboardHeader({ userName, totalTrials, nextExpiringTrial }: Da
       let greetingText = ''
       
       if (hour < 12) {
-        greetingText = 'Good morning'
+        greetingText = 'Greetings, Guardian'
       } else if (hour < 17) {
-        greetingText = 'Good afternoon'
+        greetingText = 'Salutations, Sentinel'
       } else {
-        greetingText = 'Good evening'
+        greetingText = 'Evening watch, Protector'
       }
       
       setGreeting(greetingText)
@@ -46,21 +54,61 @@ export function DashboardHeader({ userName, totalTrials, nextExpiringTrial }: Da
     return () => clearInterval(interval)
   }, [])
 
+  // Calculate stats
+  const now = new Date()
+  const activeTrials = trials.filter(trial => new Date(trial.end_date) > now && trial.outcome === 'active').length
+  const keptTrials = trials.filter(trial => trial.outcome === 'kept').length
+  const cancelledTrials = trials.filter(trial => trial.outcome === 'cancelled').length
+  const expiredTrials = trials.filter(trial => trial.outcome === 'expired').length
+  const estimatedSavings = (cancelledTrials + expiredTrials) * 10 // $10 per trial
+
+  // Get encouraging message
+  const getEncouragingMessage = () => {
+    const expiringSoon = trials.filter(trial => {
+      const daysLeft = Math.ceil((new Date(trial.end_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      return daysLeft <= 7 && daysLeft > 0
+    }).length
+
+    if (expiringSoon === 0 && activeTrials > 0) {
+      return "You're all clear! No trials expiring this week."
+    } else if (expiringSoon > 0) {
+      return `Warning: ${expiringSoon} trial${expiringSoon > 1 ? 's' : ''} expire${expiringSoon > 1 ? '' : 's'} in the next 7 days.`
+    } else if (cancelledTrials > 0 || expiredTrials > 0) {
+      return `Nice work — you've avoided $${estimatedSavings} in auto-charges so far!`
+    } else {
+      return `Welcome to Sentinel, ${userName}! The all-seeing eye is ready to watch over your free trials. Start adding them to never miss a deadline again.`
+    }
+  }
+
   const stats = [
     {
       label: 'Active Trials',
-      value: totalTrials,
+      value: activeTrials,
       icon: CheckCircle,
       color: 'text-green-400',
       bgColor: 'bg-green-500/20'
     },
-    ...(nextExpiringTrial ? [{
-      label: 'Next to Expire',
-      value: `${nextExpiringTrial.service_name} in ${nextExpiringTrial.daysLeft} days`,
+    {
+      label: 'Kept',
+      value: keptTrials,
+      icon: DollarSign,
+      color: 'text-emerald-400',
+      bgColor: 'bg-emerald-500/20'
+    },
+    {
+      label: 'Cancelled',
+      value: cancelledTrials,
+      icon: XCircle,
+      color: 'text-blue-400',
+      bgColor: 'bg-blue-500/20'
+    },
+    {
+      label: 'Past Expiry',
+      value: expiredTrials,
       icon: AlertTriangle,
-      color: nextExpiringTrial.daysLeft <= 7 ? 'text-amber-400' : 'text-slate-400',
-      bgColor: nextExpiringTrial.daysLeft <= 7 ? 'bg-amber-500/20' : 'bg-slate-500/20'
-    }] : [])
+      color: 'text-red-400',
+      bgColor: 'bg-red-500/20'
+    }
   ]
 
   return (
@@ -77,22 +125,17 @@ export function DashboardHeader({ userName, totalTrials, nextExpiringTrial }: Da
         transition={{ delay: 0.2, duration: 0.6 }}
         className="mb-6"
       >
-        <h1 className="text-3xl font-bold text-white mb-2">
-          {mounted ? `${greeting}, ${userName} 👋` : `Welcome, ${userName} 👋`}
-        </h1>
-        <p className="text-slate-400 flex items-center space-x-2">
-          <Clock className="w-4 h-4" />
-          <span>
-            {mounted && currentTime 
-              ? currentTime.toLocaleTimeString('en-US', { 
-                  hour: 'numeric', 
-                  minute: '2-digit',
-                  hour12: true 
-                })
-              : '--:-- --'
-            }
-          </span>
-        </p>
+        {/* Encouraging Message */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.6 }}
+          className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm"
+        >
+          <p className="text-slate-300 text-sm md:text-base">
+            {getEncouragingMessage()}
+          </p>
+        </motion.div>
       </motion.div>
 
       {/* Quick Stats */}
@@ -100,7 +143,7 @@ export function DashboardHeader({ userName, totalTrials, nextExpiringTrial }: Da
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 0.6 }}
-        className="grid grid-cols-1 md:grid-cols-2 gap-4"
+        className="grid grid-cols-2 md:grid-cols-4 gap-4"
       >
         {stats.map((stat, index) => (
           <motion.div
@@ -110,7 +153,7 @@ export function DashboardHeader({ userName, totalTrials, nextExpiringTrial }: Da
             transition={{ delay: 0.6 + index * 0.1, duration: 0.4 }}
             className={`
               p-4 rounded-lg border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm
-              hover:bg-slate-800/50 transition-all duration-300
+              hover:bg-slate-800/50 transition-all duration-300 hover:scale-105
             `}
           >
             <div className="flex items-center space-x-3">

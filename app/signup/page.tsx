@@ -22,29 +22,6 @@ export default function SignupPage() {
   const router = useRouter()
   const supabase = createClientComponentClient()
 
-  const checkIfEmailExists = async (email: string) => {
-    try {
-      // Try to sign in with the email to see if it exists
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false, // This prevents creating a new user
-        }
-      })
-      
-      // If we get a specific error about user not found, the email doesn't exist
-      if (error && error.message.includes('user not found')) {
-        return false
-      }
-      
-      // If no error or different error, the email likely exists
-      return true
-    } catch (error) {
-      // If there's an error, assume the email exists to be safe
-      return true
-    }
-  }
-
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -53,17 +30,7 @@ export default function SignupPage() {
     setEmailExists(false)
 
     try {
-      // First check if the email already exists
-      const emailAlreadyExists = await checkIfEmailExists(email)
-      
-      if (emailAlreadyExists) {
-        setEmailExists(true)
-        setError('An account with this email already exists.')
-        setLoading(false)
-        return
-      }
-
-      // If email doesn't exist, proceed with signup
+      // Proceed directly with signup - let Supabase handle email existence
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -151,13 +118,10 @@ export default function SignupPage() {
             animate="visible"
           >
             <motion.div variants={itemVariants}>
-              <Logo size="xl" className="mx-auto mb-6" />
+              <Logo size="xl" containerSize="xl" className="mx-auto mb-6" />
             </motion.div>
             
             <motion.div variants={itemVariants} className="space-y-4">
-              <h1 className="text-4xl font-bold text-white font-outfit">
-                Join Sentinel
-              </h1>
               <p className="text-xl text-slate-300 max-w-md">
                 Start protecting your free trials today. Never lose track of important deadlines again.
               </p>
@@ -214,7 +178,7 @@ export default function SignupPage() {
           >
             {/* Mobile Logo */}
             <motion.div variants={itemVariants} className="lg:hidden text-center">
-              <Logo size="lg" className="mx-auto mb-4" />
+              <Logo size="xl" containerSize="xl" className="mx-auto mb-4" />
               <h2 className="text-2xl font-bold text-white font-outfit">
                 Create your account
               </h2>

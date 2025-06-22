@@ -14,6 +14,7 @@ export type Database = {
           user_id: string
           service_name: string
           end_date: string
+          outcome: string
           created_at: string
           last_notified: string | null
         }
@@ -22,6 +23,7 @@ export type Database = {
           user_id: string
           service_name: string
           end_date: string
+          outcome?: string
           created_at?: string
           last_notified?: string | null
         }
@@ -30,6 +32,7 @@ export type Database = {
           user_id?: string
           service_name?: string
           end_date?: string
+          outcome?: string
           created_at?: string
           last_notified?: string | null
         }

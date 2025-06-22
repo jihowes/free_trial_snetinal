@@ -144,7 +144,7 @@ export default function LoginPage() {
             animate="visible"
           >
             <motion.div variants={itemVariants}>
-              <Logo size="xl" className="mx-auto mb-6" />
+              <Logo size="xl" containerSize="xl" className="mx-auto mb-6" />
             </motion.div>
             
             <motion.div variants={itemVariants} className="space-y-4">
@@ -186,7 +186,7 @@ export default function LoginPage() {
           >
             {/* Mobile Logo */}
             <motion.div variants={itemVariants} className="lg:hidden text-center">
-              <Logo size="xl" className="mx-auto mb-4" />
+              <Logo size="xl" containerSize="xl" className="mx-auto mb-4" />
               <h2 className="text-2xl font-bold text-white font-outfit">
                 Welcome back
               </h2>

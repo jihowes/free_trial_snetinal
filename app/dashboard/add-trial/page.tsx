@@ -23,29 +23,54 @@ export default function AddTrialPage() {
     setLoading(true)
     setError('')
 
+    console.log('Form submitted:', { serviceName, endDate })
+    
+    // Test environment variables
+    console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
+    console.log('Supabase Anon Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+
     try {
       const {
         data: { user },
+        error: userError
       } = await supabase.auth.getUser()
 
+      console.log('User check:', { user, userError })
+
+      if (userError) {
+        console.error('User error:', userError)
+        setError('Authentication error: ' + userError.message)
+        return
+      }
+
       if (!user) {
+        console.log('No user found, redirecting to login')
         router.push('/login')
         return
       }
 
-      const { error } = await supabase.from('trials').insert({
+      console.log('Inserting trial for user:', user.id)
+
+      // Insert the trial
+      const { data, error } = await supabase.from('trials').insert({
         user_id: user.id,
         service_name: serviceName,
         end_date: endDate,
       })
 
       if (error) {
-        setError(error.message)
+        setError(error.message || 'Database error occurred')
       } else {
-        router.push('/dashboard')
+        // Refresh the dashboard data and redirect
+        router.refresh()
+        // Small delay to ensure refresh completes
+        setTimeout(() => {
+          router.push('/dashboard')
+        }, 100)
       }
     } catch (error) {
-      setError('An unexpected error occurred')
+      console.error('Unexpected error:', error)
+      setError('An unexpected error occurred: ' + (error as Error).message)
     } finally {
       setLoading(false)
     }

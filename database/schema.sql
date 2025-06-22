@@ -7,6 +7,7 @@ CREATE TABLE trials (
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   service_name TEXT NOT NULL,
   end_date TIMESTAMPTZ NOT NULL,
+  outcome VARCHAR(20) DEFAULT 'active' CHECK (outcome IN ('active', 'kept', 'cancelled', 'expired')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   last_notified TIMESTAMPTZ NULL
 );
@@ -33,4 +34,5 @@ CREATE POLICY "Users can delete own trials" ON trials
 -- Create index for better query performance
 CREATE INDEX idx_trials_user_id ON trials(user_id);
 CREATE INDEX idx_trials_end_date ON trials(end_date);
-CREATE INDEX idx_trials_last_notified ON trials(last_notified); 
+CREATE INDEX idx_trials_last_notified ON trials(last_notified);
+CREATE INDEX idx_trials_outcome ON trials(outcome); 

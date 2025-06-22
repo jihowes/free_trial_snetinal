@@ -4,22 +4,46 @@ import React, { useEffect, useState } from 'react'
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl'
+  containerSize?: 'sm' | 'md' | 'lg' | 'xl'
   className?: string
 }
 
-export function Logo({ size = 'md', className = '' }: LogoProps) {
+export function Logo({ size = 'md', containerSize, className = '' }: LogoProps) {
+  const [mounted, setMounted] = useState(false)
+  
+  useEffect(() => {
+    // Use a longer delay to ensure hydration is completely finished
+    const timer = setTimeout(() => {
+      setMounted(true)
+    }, 500)
+    
+    return () => clearTimeout(timer)
+  }, [])
+
   const sizeClasses = {
-    sm: 'w-24 h-24',
-    md: 'w-32 h-32',
-    lg: 'w-40 h-40',
-    xl: 'w-48 h-48'
+    sm: 'w-12 h-12',
+    md: 'w-16 h-16',
+    lg: 'w-20 h-20',
+    xl: 'w-24 h-24'
   }
 
+  const containerSizeClasses = {
+    sm: 'w-8 h-8',
+    md: 'w-12 h-12',
+    lg: 'w-16 h-16',
+    xl: 'w-20 h-20'
+  }
+
+  // Use containerSize if provided, otherwise use size
+  const actualContainerSize = containerSize || size
+  const containerClass = containerSizeClasses[actualContainerSize]
+  const logoClass = sizeClasses[size]
+
   return (
-    <div className={`flex flex-col items-center justify-center gap-4 ${className}`}>
+    <div className={`flex flex-col items-center justify-center gap-4 ${className}`} suppressHydrationWarning>
       {/* Animated Eye of Sentinel Logo */}
-      <div className={`${sizeClasses[size]} relative sentinel-logo`}>
-        <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+      <div className={`${containerClass} relative flex items-center justify-center ${mounted ? 'sentinel-logo' : ''}`}>
+        <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className={`${logoClass}`}>
           <defs>
             <radialGradient id="eye-fire" cx="50%" cy="50%" r="50%">
               <stop offset="0%" stopColor="#ffee00" />
@@ -29,7 +53,7 @@ export function Logo({ size = 'md', className = '' }: LogoProps) {
           </defs>
 
           {/* Fiery Eye of Sentinel - Centered */}
-          <g className="sauron-eye">
+          <g className={mounted ? 'sauron-eye' : ''}>
             <path d="M75 100 C 90 80, 110 80, 125 100 C 110 120, 90 120, 75 100 Z" fill="url(#eye-fire)" />
             <ellipse cx="100" cy="100" rx="4" ry="18" fill="#0d1117" stroke="#111" strokeWidth="1.5"/>
           </g>
@@ -38,7 +62,7 @@ export function Logo({ size = 'md', className = '' }: LogoProps) {
       </div>
 
       {/* Premium Typography */}
-      <div className="flex flex-col items-center">
+      <div className="flex flex-col items-center justify-center text-center">
         <h1 className="text-4xl font-black tracking-tight text-gray-200">
           FREE TRIAL <span className="text-orange-500">SENTINEL</span>
         </h1>
@@ -50,29 +74,41 @@ export function Logo({ size = 'md', className = '' }: LogoProps) {
   )
 }
 
-export function LogoIcon({ size = 'md', className = '' }: LogoProps) {
+export function LogoIcon({ size = 'md', containerSize, className = '' }: LogoProps) {
   const [mounted, setMounted] = useState(false)
   
   useEffect(() => {
-    // Add a small delay to ensure hydration is complete
+    // Use a longer delay to ensure hydration is completely finished
     const timer = setTimeout(() => {
       setMounted(true)
-    }, 100)
+    }, 500)
     
     return () => clearTimeout(timer)
   }, [])
 
   const sizeClasses = {
-    sm: 'w-24 h-24',
-    md: 'w-32 h-32',
-    lg: 'w-40 h-40',
-    xl: 'w-48 h-48'
+    sm: 'w-12 h-12',
+    md: 'w-16 h-16',
+    lg: 'w-20 h-20',
+    xl: 'w-24 h-24'
   }
+
+  const containerSizeClasses = {
+    sm: 'w-8 h-8',
+    md: 'w-12 h-12',
+    lg: 'w-16 h-16',
+    xl: 'w-20 h-20'
+  }
+
+  // Use containerSize if provided, otherwise use size
+  const actualContainerSize = containerSize || size
+  const containerClass = containerSizeClasses[actualContainerSize]
+  const logoClass = sizeClasses[size]
 
   // Always render the static version first to prevent hydration issues
   return (
-    <div className={`${sizeClasses[size]} relative ${mounted ? 'sentinel-logo' : ''} ${className}`}>
-        <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+    <div className={`${containerClass} relative flex items-center justify-center ${mounted ? 'sentinel-logo' : ''} ${className}`} suppressHydrationWarning>
+        <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className={`${logoClass}`}>
           <defs>
             <radialGradient id="eye-fire" cx="50%" cy="50%" r="50%">
               <stop offset="0%" stopColor="#ffee00" />
