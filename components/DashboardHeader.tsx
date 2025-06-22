@@ -8,7 +8,7 @@ interface Trial {
   id: string
   service_name: string
   end_date: string
-  status?: 'active' | 'cancelled' | 'missed'
+  outcome?: 'active' | 'kept' | 'cancelled' | 'expired'
 }
 
 interface DashboardHeaderProps {
@@ -56,7 +56,10 @@ export function DashboardHeader({ userName, totalTrials, trials, nextExpiringTri
 
   // Calculate stats
   const now = new Date()
-  const activeTrials = trials.filter(trial => new Date(trial.end_date) > now && trial.outcome === 'active').length
+  const activeTrials = trials.filter(trial => {
+    const isActive = trial.outcome === 'active' || trial.outcome === null || trial.outcome === undefined
+    return new Date(trial.end_date) > now && isActive
+  }).length
   const keptTrials = trials.filter(trial => trial.outcome === 'kept').length
   const cancelledTrials = trials.filter(trial => trial.outcome === 'cancelled').length
   const expiredTrials = trials.filter(trial => trial.outcome === 'expired').length
@@ -66,7 +69,9 @@ export function DashboardHeader({ userName, totalTrials, trials, nextExpiringTri
   const getEncouragingMessage = () => {
     const expiringSoon = trials.filter(trial => {
       const daysLeft = Math.ceil((new Date(trial.end_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-      return daysLeft <= 7 && daysLeft > 0
+      // Only count active trials (not actioned ones)
+      const isActive = trial.outcome === 'active' || trial.outcome === null || trial.outcome === undefined
+      return daysLeft <= 7 && daysLeft > 0 && isActive
     }).length
 
     if (expiringSoon === 0 && activeTrials > 0) {

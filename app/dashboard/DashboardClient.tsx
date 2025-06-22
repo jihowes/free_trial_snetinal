@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/Button'
 import { User } from '@supabase/supabase-js'
 import { LogoIcon } from '@/components/ui/Logo'
-import { LogOut, Plus, Search, Filter, RefreshCw } from 'lucide-react'
+import { LogOut, Plus, Search, Filter, RefreshCw, Trash2 } from 'lucide-react'
 import FantasyBackgroundWrapper from '@/components/FantasyBackgroundWrapper'
 import { DashboardHeader } from '@/components/DashboardHeader'
 import { TrialCard } from '@/components/TrialCard'
@@ -30,8 +30,7 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
   const [loading, setLoading] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [sortBy, setSortBy] = useState<'expiry' | 'name'>('expiry')
-  const [filterBy, setFilterBy] = useState<'all' | 'expiring' | 'cancelled' | 'missed'>('all')
+  const [filterBy, setFilterBy] = useState<'all' | 'expiring'>('all')
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
   const [showOutcomeModal, setShowOutcomeModal] = useState(false)
@@ -126,6 +125,44 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
     }
   }
 
+  const handleDeleteFromGraveyard = async (trialId: string) => {
+    setLoading(true)
+    setDeletingId(trialId)
+    try {
+      await supabase.from('trials').delete().eq('id', trialId)
+      router.refresh()
+      showToastMessage('Trial permanently deleted!')
+    } catch (error) {
+      console.error('Error deleting trial:', error)
+      showToastMessage('Failed to delete trial. Please try again.')
+    } finally {
+      setLoading(false)
+      setDeletingId(null)
+    }
+  }
+
+  const handleActionTrial = async (trialId: string, action: 'kept' | 'cancelled') => {
+    setLoading(true)
+    try {
+      await supabase
+        .from('trials')
+        .update({ outcome: action })
+        .eq('id', trialId)
+      
+      showToastMessage(`Trial marked as ${action}`)
+      
+      // Refresh after a short delay
+      setTimeout(() => {
+        router.refresh()
+      }, 500)
+    } catch (error) {
+      console.error('Error updating trial outcome:', error)
+      showToastMessage('Failed to update trial outcome. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const showToastMessage = (message: string) => {
     setToastMessage(message)
     setShowToast(true)
@@ -181,6 +218,10 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
   // Filter and sort trials
   const filteredAndSortedTrials = currentTrials
     .filter(trial => {
+      // Only show active trials (not actioned ones)
+      const isActive = trial.outcome === 'active' || trial.outcome === null || trial.outcome === undefined
+      if (!isActive) return false
+      
       // Search filter
       const matchesSearch = trial.service_name.toLowerCase().includes(searchTerm.toLowerCase())
       
@@ -193,12 +234,6 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
         case 'expiring':
           matchesFilter = daysLeft <= 7 && daysLeft > 0
           break
-        case 'cancelled':
-          matchesFilter = trial.outcome === 'cancelled'
-          break
-        case 'missed':
-          matchesFilter = trial.outcome === 'expired'
-          break
         case 'all':
         default:
           matchesFilter = true
@@ -208,11 +243,11 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
       return matchesSearch && matchesFilter
     })
     .sort((a, b) => {
-      if (sortBy === 'expiry') {
-        return new Date(a.end_date).getTime() - new Date(b.end_date).getTime()
-      } else {
-        return a.service_name.localeCompare(b.service_name)
-      }
+      // Always sort by days to expiry (soonest first)
+      const now = new Date()
+      const daysLeftA = Math.ceil((new Date(a.end_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      const daysLeftB = Math.ceil((new Date(b.end_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      return daysLeftA - daysLeftB
     })
 
   // Get next expiring trial for header
@@ -286,10 +321,6 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
             <motion.header variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-3 border-b border-slate-700/50 mt-2">
               <div className="flex items-center gap-4 mb-3 md:mb-0">
                 <LogoIcon size="xl" />
-                <div className="text-xs text-slate-400 space-y-1">
-                  <div>Current time: {currentTime.toLocaleTimeString()} ({Intl.DateTimeFormat().resolvedOptions().timeZone})</div>
-                  <div>Last updated: {lastUpdated.toLocaleTimeString()}</div>
-                </div>
               </div>
               <div className="flex items-center gap-3">
                 <Button 
@@ -337,9 +368,7 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
                 <div className="flex flex-wrap gap-2">
                   {[
                     { key: 'all', label: 'All' },
-                    { key: 'expiring', label: 'Expiring Soon' },
-                    { key: 'cancelled', label: 'Cancelled' },
-                    { key: 'missed', label: 'Past Expiry' }
+                    { key: 'expiring', label: 'Expiring Soon' }
                   ].map((filter) => (
                     <button
                       key={filter.key}
@@ -357,7 +386,7 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
                   ))}
                 </div>
 
-                {/* Search and Sort */}
+                {/* Search */}
                 <div className="flex flex-col sm:flex-row gap-4">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
@@ -369,14 +398,6 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
                       className="w-full pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-fantasy-crimson/50 focus:border-fantasy-crimson/50"
                     />
                   </div>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as 'expiry' | 'name')}
-                    className="px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-fantasy-crimson/50 focus:border-fantasy-crimson/50"
-                  >
-                    <option value="expiry">Sort by Expiry</option>
-                    <option value="name">Sort by Name</option>
-                  </select>
                 </div>
               </motion.div>
             )}
@@ -416,6 +437,7 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
                           service_name={trial.service_name}
                           end_date={trial.end_date}
                           onDelete={handleDeleteTrial}
+                          onAction={handleActionTrial}
                           index={index}
                         />
                       ))}
@@ -426,10 +448,11 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
 
               {/* Trial Outcome History (Graveyard) */}
               {(() => {
-                const now = new Date()
-                const pastTrials = currentTrials.filter(trial => new Date(trial.end_date) < now)
+                const actionedTrials = currentTrials.filter(trial => 
+                  trial.outcome === 'kept' || trial.outcome === 'cancelled' || trial.outcome === 'expired'
+                )
                 
-                if (pastTrials.length > 0) {
+                if (actionedTrials.length > 0) {
                   return (
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
@@ -443,12 +466,12 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
                           Trial Graveyard
                         </h2>
                         <span className="text-slate-400 text-sm">
-                          {pastTrials.length} past trial{pastTrials.length > 1 ? 's' : ''}
+                          {actionedTrials.length} actioned trial{actionedTrials.length > 1 ? 's' : ''}
                         </span>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {pastTrials.map((trial, index) => {
+                        {actionedTrials.map((trial, index) => {
                           const status = trial.outcome || 'unknown'
                           const statusConfig = {
                             active: { icon: '⏳', label: 'Active', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
@@ -469,7 +492,18 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
                             >
                               <div className="flex items-start justify-between mb-3">
                                 <h3 className="font-semibold text-white text-sm">{trial.service_name}</h3>
-                                <span className="text-lg">{config.icon}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-lg">{config.icon}</span>
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => handleDeleteFromGraveyard(trial.id)}
+                                    className="p-1 rounded text-red-400 hover:text-red-300 hover:bg-red-500/20"
+                                    title="Permanently delete trial"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
                               </div>
                               <div className="flex items-center justify-between">
                                 <span className={`text-xs px-2 py-1 rounded-full ${config.bgColor} ${config.color}`}>

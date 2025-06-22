@@ -29,6 +29,9 @@ export function CountdownBadge({ daysLeft, isUrgent, isWarning }: CountdownBadge
   // Only pulse if expiring in next 3 days or expired in last 7 days
   const shouldPulse = (daysLeft >= 0 && daysLeft <= 2) || (daysLeft < 0 && daysLeft >= -7)
 
+  // Use a shared key for all pulsing badges to synchronize animation
+  const pulseKey = shouldPulse ? 'pulse-sync' : undefined
+
   if (!mounted) {
     return (
       <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-medium bg-slate-500/20 border border-slate-500/30 text-slate-300">
@@ -40,6 +43,7 @@ export function CountdownBadge({ daysLeft, isUrgent, isWarning }: CountdownBadge
 
   return (
     <motion.div
+      key={pulseKey}
       className={`
         inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap
         ${isUrgent 
