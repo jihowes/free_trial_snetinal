@@ -1,33 +1,86 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
-import { OctopusMascot, FloatingOctopus } from '@/components/ui/OctopusMascot'
-import { ArrowLeft, Plus, Shield, Clock, Zap } from 'lucide-react'
+import { ArrowLeft, Plus, Calendar, Clock, Shield, Zap, Sparkles, Eye, Bell, CheckCircle } from 'lucide-react'
+import FantasyBackgroundWrapper from '@/components/FantasyBackgroundWrapper'
+import { Logo, LogoIcon } from '@/components/ui/Logo'
 
 export default function AddTrialPage() {
   const [serviceName, setServiceName] = useState('')
   const [endDate, setEndDate] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({})
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
   const supabase = createClientComponentClient()
 
+  useEffect(() => {
+    // Use a longer delay to ensure hydration is completely finished
+    const timer = setTimeout(() => {
+      setMounted(true)
+    }, 500)
+    
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Quick date presets
+  const getQuickDates = () => {
+    const today = new Date()
+    const sevenDays = new Date(today)
+    sevenDays.setDate(today.getDate() + 7)
+    const fourteenDays = new Date(today)
+    fourteenDays.setDate(today.getDate() + 14)
+    const oneMonth = new Date(today)
+    oneMonth.setMonth(today.getMonth() + 1)
+
+    return [
+      { label: '7 Days', date: sevenDays.toISOString().split('T')[0] },
+      { label: '14 Days', date: fourteenDays.toISOString().split('T')[0] },
+      { label: '1 Month', date: oneMonth.toISOString().split('T')[0] }
+    ]
+  }
+
+  const validateForm = () => {
+    const errors: {[key: string]: string} = {}
+    
+    if (!serviceName.trim()) {
+      errors.serviceName = 'Service name is required'
+    } else if (serviceName.trim().length < 2) {
+      errors.serviceName = 'Service name must be at least 2 characters'
+    }
+    
+    if (!endDate) {
+      errors.endDate = 'End date is required'
+    } else {
+      const selectedDate = new Date(endDate)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      
+      if (selectedDate < today) {
+        errors.endDate = 'End date cannot be in the past'
+      }
+    }
+    
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!validateForm()) {
+      return
+    }
+    
     setLoading(true)
     setError('')
-
-    console.log('Form submitted:', { serviceName, endDate })
-    
-    // Test environment variables
-    console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
-    console.log('Supabase Anon Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
     try {
       const {
@@ -35,34 +88,25 @@ export default function AddTrialPage() {
         error: userError
       } = await supabase.auth.getUser()
 
-      console.log('User check:', { user, userError })
-
       if (userError) {
-        console.error('User error:', userError)
         setError('Authentication error: ' + userError.message)
         return
       }
 
       if (!user) {
-        console.log('No user found, redirecting to login')
         router.push('/login')
         return
       }
-
-      console.log('Inserting trial for user:', user.id)
 
       // Set the end date to the end of the selected day (23:59:59)
       const endOfDay = new Date(endDate)
       endOfDay.setHours(23, 59, 59, 999)
       const endDateWithTime = endOfDay.toISOString()
 
-      console.log('Original date:', endDate)
-      console.log('End of day date:', endDateWithTime)
-
       // Insert the trial
       const { data, error } = await supabase.from('trials').insert({
         user_id: user.id,
-        service_name: serviceName,
+        service_name: serviceName.trim(),
         end_date: endDateWithTime,
       })
 
@@ -71,9 +115,8 @@ export default function AddTrialPage() {
       } else {
         // Refresh the dashboard data and redirect
         router.refresh()
-        // Small delay to ensure refresh completes
         setTimeout(() => {
-          router.push('/dashboard')
+        router.push('/dashboard')
         }, 100)
       }
     } catch (error) {
@@ -108,14 +151,10 @@ export default function AddTrialPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
-      {/* Floating background octopuses */}
-      <FloatingOctopus className="top-20 right-20 opacity-20" />
-      <FloatingOctopus className="bottom-40 left-10 opacity-15" />
-      <FloatingOctopus className="top-1/2 left-1/3 opacity-10" />
-
+    <FantasyBackgroundWrapper>
+      <div className="min-h-screen flex items-center justify-center p-4 relative">
       <motion.div
-        className="w-full max-w-md"
+          className="w-full max-w-lg"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -125,7 +164,7 @@ export default function AddTrialPage() {
           <Button
             variant="secondary"
             onClick={() => router.push('/dashboard')}
-            className="text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground bg-slate-800/50 border border-slate-700/50 hover:bg-slate-700/50"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
@@ -133,18 +172,30 @@ export default function AddTrialPage() {
         </motion.div>
 
         <motion.div variants={itemVariants}>
-          <Card className="border-0 shadow-xl bg-card/50 backdrop-blur-sm">
-            <CardHeader className="space-y-4 text-center">
-              <div className="flex justify-center mb-4">
-                <OctopusMascot size="lg" variant="excited" />
+            <Card className="border-0 shadow-2xl bg-slate-900/80 backdrop-blur-sm border border-slate-700/50">
+              <CardHeader className="space-y-2 text-center pb-4">
+                <div className="flex justify-center mb-2">
+                  <div className="w-32 h-32 relative flex items-center justify-center sentinel-logo" suppressHydrationWarning>
+                    <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-32 h-32">
+                      <defs>
+                        <radialGradient id="eye-fire-large" cx="50%" cy="50%" r="50%">
+                          <stop offset="0%" stopColor="#ffee00" />
+                          <stop offset="60%" stopColor="#ff8c00" />
+                          <stop offset="100%" stopColor="#ff4500" />
+                        </radialGradient>
+                      </defs>
+
+                      {/* Larger Fiery Eye of Sentinel - Centered */}
+                      <g className={mounted ? 'sauron-eye' : ''}>
+                        <path d="M65 100 C 85 75, 115 75, 135 100 C 115 125, 85 125, 65 100 Z" fill="url(#eye-fire-large)" />
+                        <ellipse cx="100" cy="100" rx="6" ry="22" fill="#0d1117" stroke="#111" strokeWidth="2"/>
+                      </g>
+                    </svg>
+                  </div>
               </div>
-              <CardTitle className="text-2xl font-outfit">Add New Trial</CardTitle>
-              <CardDescription>
-                Let your octopus guardian watch over this trial for you! 🐙✨
-              </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-4">
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -155,7 +206,14 @@ export default function AddTrialPage() {
                     type="text"
                     placeholder="e.g., Netflix, Spotify, Adobe Creative Suite"
                     value={serviceName}
-                    onChange={(e) => setServiceName(e.target.value)}
+                      onChange={(e) => {
+                        setServiceName(e.target.value)
+                        if (validationErrors.serviceName) {
+                          setValidationErrors(prev => ({ ...prev, serviceName: '' }))
+                        }
+                      }}
+                      error={validationErrors.serviceName}
+                      className="bg-blue-50 border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-red-400 focus:ring-red-400/20 shadow-sm focus-visible:ring-0 focus-visible:ring-offset-0"
                     required
                   />
                 </motion.div>
@@ -166,24 +224,59 @@ export default function AddTrialPage() {
                   transition={{ delay: 0.3 }}
                 >
                   <Input
-                    label="End Date (expires at end of day)"
+                    label="End Date"
                     type="date"
                     value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                      onChange={(e) => {
+                        setEndDate(e.target.value)
+                        if (validationErrors.endDate) {
+                          setValidationErrors(prev => ({ ...prev, endDate: '' }))
+                        }
+                      }}
+                      error={validationErrors.endDate}
+                      className="bg-blue-50 border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-red-400 focus:ring-red-400/20 shadow-sm focus-visible:ring-0 focus-visible:ring-offset-0"
                     required
                   />
-                  <p className="text-xs text-slate-400 mt-1">
-                    Your trial will expire at 11:59 PM on the selected date
-                  </p>
+                    <p className="text-xs text-slate-400 mt-2 flex items-center">
+                      <Clock className="w-3 h-3 mr-1" />
+                      End date assumes the trial expires at 11:59 PM on the selected date
+                    </p>
+                  </motion.div>
+
+                  {/* Quick date presets */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.35 }}
+                    className="space-y-2"
+                  >
+                    <p className="text-xs text-slate-400 font-medium">Quick Presets:</p>
+                    <div className="flex gap-2 flex-wrap">
+                      {getQuickDates().map((preset, index) => (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => {
+                            setEndDate(preset.date)
+                            if (validationErrors.endDate) {
+                              setValidationErrors(prev => ({ ...prev, endDate: '' }))
+                            }
+                          }}
+                          className="px-3 py-1 text-xs bg-slate-800/50 border border-slate-600/50 rounded-md text-slate-300 hover:bg-slate-700/50 hover:border-red-400/50 transition-colors"
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
                 </motion.div>
 
                 {error && (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="p-3 rounded-lg bg-destructive/10 border border-destructive/20"
+                      className="p-3 rounded-lg bg-red-500/10 border border-red-500/20"
                   >
-                    <p className="text-sm text-destructive">{error}</p>
+                      <p className="text-sm text-red-400">{error}</p>
                   </motion.div>
                 )}
 
@@ -191,19 +284,19 @@ export default function AddTrialPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="flex gap-3"
+                    className="flex gap-3 pt-2"
                 >
                   <Button
                     type="button"
                     variant="secondary"
-                    className="flex-1"
+                      className="flex-1 bg-slate-800/50 border border-slate-700/50 hover:bg-slate-700/50 text-slate-300"
                     onClick={() => router.push('/dashboard')}
                   >
                     Cancel
                   </Button>
                   <Button 
                     type="submit" 
-                    className="flex-1 bg-gradient-to-r from-neon-green to-emerald-500 hover:from-emerald-500 hover:to-neon-green text-white" 
+                      className="flex-1 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white shadow-lg" 
                     disabled={loading}
                   >
                     {loading ? (
@@ -225,42 +318,43 @@ export default function AddTrialPage() {
           </Card>
         </motion.div>
 
-        {/* Feature highlights */}
+          {/* What happens next */}
         <motion.div 
           variants={itemVariants}
-          className="mt-8 grid grid-cols-1 gap-4"
-        >
-          <div className="flex items-center space-x-3 p-4 rounded-lg bg-slate-800/30 border border-border/50">
-            <div className="w-10 h-10 bg-neon-green/20 rounded-lg flex items-center justify-center">
-              <Shield className="w-5 h-5 text-neon-green" />
+            className="mt-4 grid grid-cols-1 gap-3"
+          >
+            <div className="flex items-center space-x-3 p-3 rounded-lg bg-slate-800/30 border border-slate-700/50 backdrop-blur-sm">
+              <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
+                <Eye className="w-5 h-5 text-red-400" />
             </div>
             <div>
-              <p className="font-medium text-sm">Smart Protection</p>
-              <p className="text-xs text-muted-foreground">Automated monitoring and alerts</p>
-            </div>
+                <p className="font-medium text-sm text-slate-200">Constant Monitoring</p>
+                <p className="text-xs text-slate-400">Your trial will be tracked on the dashboard</p>
+              </div>
           </div>
           
-          <div className="flex items-center space-x-3 p-4 rounded-lg bg-slate-800/30 border border-border/50">
-            <div className="w-10 h-10 bg-neon-blue/20 rounded-lg flex items-center justify-center">
-              <Clock className="w-5 h-5 text-neon-blue" />
+            <div className="flex items-center space-x-3 p-3 rounded-lg bg-slate-800/30 border border-slate-700/50 backdrop-blur-sm">
+              <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                <Bell className="w-5 h-5 text-orange-400" />
             </div>
             <div>
-              <p className="font-medium text-sm">Timely Reminders</p>
-              <p className="text-xs text-muted-foreground">Never miss an expiration date</p>
-            </div>
+                <p className="font-medium text-sm text-slate-200">Smart Alerts</p>
+                <p className="text-xs text-slate-400">Get notified when trials are expiring soon</p>
+              </div>
           </div>
           
-          <div className="flex items-center space-x-3 p-4 rounded-lg bg-slate-800/30 border border-border/50">
-            <div className="w-10 h-10 bg-neon-purple/20 rounded-lg flex items-center justify-center">
-              <Zap className="w-5 h-5 text-neon-purple" />
+            <div className="flex items-center space-x-3 p-3 rounded-lg bg-slate-800/30 border border-slate-700/50 backdrop-blur-sm">
+              <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-green-400" />
             </div>
             <div>
-              <p className="font-medium text-sm">Instant Notifications</p>
-              <p className="text-xs text-muted-foreground">Real-time updates and alerts</p>
+                <p className="font-medium text-sm text-slate-200">Track Outcomes</p>
+                <p className="text-xs text-slate-400">Mark trials as kept, cancelled, or expired</p>
+              </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
       </motion.div>
     </div>
+    </FantasyBackgroundWrapper>
   )
 } 
