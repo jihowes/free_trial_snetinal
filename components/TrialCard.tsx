@@ -5,20 +5,25 @@ import { MoreHorizontal, Calendar, CheckCircle, XCircle } from 'lucide-react'
 import { Button } from './ui/Button'
 import { Card } from './ui/Card'
 import { CountdownBadge } from './CountdownBadge'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
 
 interface TrialCardProps {
   id: string
   service_name: string
   end_date: string
+  cost?: number | null
+  billing_frequency?: 'weekly' | 'fortnightly' | 'monthly' | 'yearly'
   onDelete: (id: string) => void
   onAction: (id: string, action: 'kept' | 'cancelled') => void
   index: number
 }
 
-export function TrialCard({ id, service_name, end_date, onDelete, onAction, index }: TrialCardProps) {
+export function TrialCard({ id, service_name, end_date, cost, billing_frequency, onDelete, onAction, index }: TrialCardProps) {
   const [mounted, setMounted] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
+  const dropdownButtonRef = useRef<HTMLDivElement>(null)
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -38,9 +43,20 @@ export function TrialCard({ id, service_name, end_date, onDelete, onAction, inde
     }
   }, [showDropdown])
 
+  // When showing dropdown, calculate position
+  useEffect(() => {
+    if (showDropdown && dropdownButtonRef.current) {
+      const rect = dropdownButtonRef.current.getBoundingClientRect()
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 8, // 8px margin
+        left: rect.left + window.scrollX,
+      })
+    }
+  }, [showDropdown])
+
   const endDate = new Date(end_date)
   const now = new Date()
-  const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  const daysLeft = Math.floor((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
   
   const isUrgent = daysLeft <= 1
   const isWarning = daysLeft <= 7 && daysLeft > 1
@@ -98,7 +114,7 @@ export function TrialCard({ id, service_name, end_date, onDelete, onAction, inde
       className="w-full"
     >
       <Card className={`
-        relative overflow-hidden border-0 shadow-lg transition-all duration-300
+        relative overflow-hidden border-0 shadow-lg transition-all duration-300 z-0
         ${isUrgent 
           ? 'bg-gradient-to-r from-red-900/20 to-red-800/20 border-red-500/30 shadow-red-500/10' 
           : isWarning 
@@ -117,16 +133,91 @@ export function TrialCard({ id, service_name, end_date, onDelete, onAction, inde
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-3 mb-3">
-                <div className={`
-                  w-10 h-10 rounded-lg flex items-center justify-center
-                  ${isUrgent 
-                    ? 'bg-red-500/20 text-red-400' 
-                    : isWarning 
-                      ? 'bg-amber-500/20 text-amber-400'
-                      : 'bg-slate-500/20 text-slate-400'
-                  }
-                `}>
-                  <Calendar className="w-5 h-5" />
+                <div className="flex flex-col items-center justify-center mr-2 min-w-[40px]">
+                  <motion.div
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="mb-1"
+                  >
+                    {isExpired ? (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => onDelete(id)}
+                        className="p-1 rounded-full transition-all duration-200 text-slate-400 hover:text-slate-300 hover:bg-slate-500/20 bg-slate-800/80 border border-slate-600/50"
+                        title="Delete trial"
+                      >
+                        <MoreHorizontal className="w-3 h-3" />
+                      </Button>
+                    ) : (
+                      <div ref={dropdownButtonRef} className="relative">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setShowDropdown(!showDropdown)}
+                          className={`
+                            p-1 rounded-full transition-all duration-200 bg-slate-800/80 border border-slate-600/50
+                            ${isUrgent 
+                              ? 'text-red-400 hover:text-red-300 hover:bg-red-500/20' 
+                              : isWarning 
+                                ? 'text-amber-400 hover:text-amber-300 hover:bg-amber-500/20'
+                                : 'text-slate-400 hover:text-slate-300 hover:bg-slate-500/20'
+                            }
+                          `}
+                          title="Action trial"
+                        >
+                          <MoreHorizontal className="w-3 h-3" />
+                        </Button>
+                        {/* Dropdown rendered via portal */}
+                        {showDropdown && dropdownPosition && createPortal(
+                          <div
+                            className="fixed w-48 bg-slate-900 bg-opacity-100 border-2 border-slate-600 rounded-lg shadow-2xl z-[100000]"
+                            style={{
+                              top: dropdownPosition.top,
+                              left: dropdownPosition.left,
+                              backgroundColor: '#0f172a',
+                              opacity: 1,
+                            }}
+                          >
+                            <div className="py-1">
+                              <button
+                                onClick={() => {
+                                  onAction(id, 'kept')
+                                  setShowDropdown(false)
+                                }}
+                                className="w-full flex items-center px-4 py-2 text-sm text-green-400 hover:text-green-300 hover:bg-green-500/20 transition-colors"
+                              >
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                Mark as Kept
+                              </button>
+                              <button
+                                onClick={() => {
+                                  onAction(id, 'cancelled')
+                                  setShowDropdown(false)
+                                }}
+                                className="w-full flex items-center px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors"
+                              >
+                                <XCircle className="w-4 h-4 mr-2" />
+                                Mark as Cancelled
+                              </button>
+                            </div>
+                          </div>,
+                          document.body
+                        )}
+                      </div>
+                    )}
+                  </motion.div>
+                  <div className={`
+                    w-10 h-10 rounded-lg flex items-center justify-center
+                    ${isUrgent 
+                      ? 'bg-red-500/20 text-red-400' 
+                      : isWarning 
+                        ? 'bg-amber-500/20 text-amber-400'
+                        : 'bg-slate-500/20 text-slate-400'
+                    }
+                  `}>
+                    <Calendar className="w-5 h-5" />
+                  </div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-lg font-semibold text-white truncate">
@@ -140,80 +231,19 @@ export function TrialCard({ id, service_name, end_date, onDelete, onAction, inde
                       day: 'numeric' 
                     })}
                   </p>
+                  {/* Potential savings indicator */}
+                  {cost && cost > 0 && daysLeft >= 0 && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <span className="text-xs text-slate-500">
+                        ${cost.toFixed(2)}/{billing_frequency || 'month'}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
               
               <CountdownBadge daysLeft={daysLeft} isUrgent={isUrgent} isWarning={isWarning} />
             </div>
-            
-            <motion.div
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              {isExpired ? (
-                // Show delete button for expired trials
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => onDelete(id)}
-                  className="p-2 rounded-lg transition-all duration-200 text-slate-400 hover:text-slate-300 hover:bg-slate-500/20"
-                  title="Delete trial"
-                >
-                  <MoreHorizontal className="w-4 h-4" />
-                </Button>
-              ) : (
-                // Show action dropdown for active trials
-                <div className="relative">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setShowDropdown(!showDropdown)}
-                    className={`
-                      p-2 rounded-lg transition-all duration-200
-                      ${isUrgent 
-                        ? 'text-red-400 hover:text-red-300 hover:bg-red-500/20' 
-                        : isWarning 
-                          ? 'text-amber-400 hover:text-amber-300 hover:bg-amber-500/20'
-                          : 'text-slate-400 hover:text-slate-300 hover:bg-slate-500/20'
-                      }
-                    `}
-                    title="Action trial"
-                  >
-                    <MoreHorizontal className="w-4 h-4" />
-                  </Button>
-                  
-                  {/* Custom Dropdown */}
-                  {showDropdown && (
-                    <div className="absolute right-0 top-full mt-2 w-48 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl z-50">
-                      <div className="py-1">
-                        <button
-                          onClick={() => {
-                            console.log('Marking trial as kept:', id)
-                            onAction(id, 'kept')
-                            setShowDropdown(false)
-                          }}
-                          className="w-full flex items-center px-4 py-2 text-sm text-green-400 hover:text-green-300 hover:bg-green-500/20 transition-colors"
-                        >
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Mark as Kept
-                        </button>
-                        <button
-                          onClick={() => {
-                            console.log('Marking trial as cancelled:', id)
-                            onAction(id, 'cancelled')
-                            setShowDropdown(false)
-                          }}
-                          className="w-full flex items-center px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors"
-                        >
-                          <XCircle className="w-4 h-4 mr-2" />
-                          Mark as Cancelled
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </motion.div>
           </div>
         </div>
       </Card>

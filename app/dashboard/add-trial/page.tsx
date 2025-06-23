@@ -7,13 +7,15 @@ import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
-import { ArrowLeft, Plus, Calendar, Clock, Shield, Zap, Sparkles, Eye, Bell, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Plus, Calendar, Clock, Shield, Zap, Sparkles, Eye, Bell, CheckCircle, DollarSign } from 'lucide-react'
 import FantasyBackgroundWrapper from '@/components/FantasyBackgroundWrapper'
 import { Logo, LogoIcon } from '@/components/ui/Logo'
 
 export default function AddTrialPage() {
   const [serviceName, setServiceName] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [cost, setCost] = useState('')
+  const [billingFrequency, setBillingFrequency] = useState<'weekly' | 'fortnightly' | 'monthly' | 'yearly'>('monthly')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({})
@@ -39,11 +41,25 @@ export default function AddTrialPage() {
     fourteenDays.setDate(today.getDate() + 14)
     const oneMonth = new Date(today)
     oneMonth.setMonth(today.getMonth() + 1)
+    const oneYear = new Date(today)
+    oneYear.setFullYear(today.getFullYear() + 1)
 
     return [
       { label: '7 Days', date: sevenDays.toISOString().split('T')[0] },
       { label: '14 Days', date: fourteenDays.toISOString().split('T')[0] },
-      { label: '1 Month', date: oneMonth.toISOString().split('T')[0] }
+      { label: '1 Month', date: oneMonth.toISOString().split('T')[0] },
+      { label: '1 Year', date: oneYear.toISOString().split('T')[0] }
+    ]
+  }
+
+  // Quick price presets
+  const getQuickPrices = () => {
+    return [
+      { label: '$9.99', price: '9.99' },
+      { label: '$14.99', price: '14.99' },
+      { label: '$19.99', price: '19.99' },
+      { label: '$29.99', price: '29.99' },
+      { label: '$49.99', price: '49.99' }
     ]
   }
 
@@ -65,6 +81,16 @@ export default function AddTrialPage() {
       
       if (selectedDate < today) {
         errors.endDate = 'End date cannot be in the past'
+      }
+    }
+    
+    // Validate cost if provided
+    if (cost.trim()) {
+      const price = parseFloat(cost)
+      if (isNaN(price) || price < 0) {
+        errors.cost = 'Please enter a valid cost (e.g., 9.99)'
+      } else if (price > 999999.99) {
+        errors.cost = 'Cost cannot exceed $999,999.99'
       }
     }
     
@@ -108,6 +134,8 @@ export default function AddTrialPage() {
         user_id: user.id,
         service_name: serviceName.trim(),
         end_date: endDateWithTime,
+        cost: cost.trim() ? parseFloat(cost) : null,
+        billing_frequency: billingFrequency,
       })
 
       if (error) {
@@ -151,7 +179,7 @@ export default function AddTrialPage() {
   }
 
   return (
-    <FantasyBackgroundWrapper>
+    <FantasyBackgroundWrapper showFloatingEye={false}>
       <div className="min-h-screen flex items-center justify-center p-4 relative">
       <motion.div
           className="w-full max-w-lg"
@@ -173,10 +201,10 @@ export default function AddTrialPage() {
 
         <motion.div variants={itemVariants}>
             <Card className="border-0 shadow-2xl bg-slate-900/80 backdrop-blur-sm border border-slate-700/50">
-              <CardHeader className="space-y-2 text-center pb-4">
-                <div className="flex justify-center mb-2">
-                  <div className="w-32 h-32 relative flex items-center justify-center sentinel-logo" suppressHydrationWarning>
-                    <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-32 h-32">
+              <CardHeader className="space-y-1 text-center pb-2">
+                <div className="flex justify-center mb-1">
+                  <div className="w-20 h-20 relative flex items-center justify-center sentinel-logo" suppressHydrationWarning>
+                    <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-20 h-20">
                       <defs>
                         <radialGradient id="eye-fire-large" cx="50%" cy="50%" r="50%">
                           <stop offset="0%" stopColor="#ffee00" />
@@ -194,8 +222,8 @@ export default function AddTrialPage() {
                   </div>
               </div>
             </CardHeader>
-            <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
+            <CardContent className="pt-2">
+                <form onSubmit={handleSubmit} className="space-y-3">
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -206,14 +234,14 @@ export default function AddTrialPage() {
                     type="text"
                     placeholder="e.g., Netflix, Spotify, Adobe Creative Suite"
                     value={serviceName}
-                      onChange={(e) => {
-                        setServiceName(e.target.value)
-                        if (validationErrors.serviceName) {
-                          setValidationErrors(prev => ({ ...prev, serviceName: '' }))
-                        }
-                      }}
-                      error={validationErrors.serviceName}
-                      className="bg-blue-50 border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-red-400 focus:ring-red-400/20 shadow-sm focus-visible:ring-0 focus-visible:ring-offset-0"
+                    onChange={(e) => {
+                      setServiceName(e.target.value)
+                      if (validationErrors.serviceName) {
+                        setValidationErrors(prev => ({ ...prev, serviceName: '' }))
+                      }
+                    }}
+                    error={validationErrors.serviceName}
+                    className="bg-blue-50 border-slate-300 text-slate-900 placeholder:text-slate-500 shadow-sm focus-visible:ring-2 focus-visible:ring-offset-0"
                     required
                   />
                 </motion.div>
@@ -227,48 +255,121 @@ export default function AddTrialPage() {
                     label="End Date"
                     type="date"
                     value={endDate}
-                      onChange={(e) => {
-                        setEndDate(e.target.value)
-                        if (validationErrors.endDate) {
-                          setValidationErrors(prev => ({ ...prev, endDate: '' }))
-                        }
-                      }}
-                      error={validationErrors.endDate}
-                      className="bg-blue-50 border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-red-400 focus:ring-red-400/20 shadow-sm focus-visible:ring-0 focus-visible:ring-offset-0"
+                    onChange={(e) => {
+                      setEndDate(e.target.value)
+                      if (validationErrors.endDate) {
+                        setValidationErrors(prev => ({ ...prev, endDate: '' }))
+                      }
+                    }}
+                    error={validationErrors.endDate}
+                    className="bg-blue-50 border-slate-300 text-slate-900 placeholder:text-slate-500 shadow-sm focus-visible:ring-2 focus-visible:ring-offset-0"
                     required
                   />
-                    <p className="text-xs text-slate-400 mt-2 flex items-center">
+                    <p className="text-xs text-slate-400 mt-1 flex items-center">
                       <Clock className="w-3 h-3 mr-1" />
                       End date assumes the trial expires at 11:59 PM on the selected date
                     </p>
+                    
+                    {/* Common date presets */}
+                    <div className="mt-2 space-y-1">
+                      <p className="text-xs text-slate-400 font-medium">Common Dates:</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {getQuickDates().map((preset, index) => (
+                          <button
+                            key={preset.label}
+                            type="button"
+                            onClick={() => {
+                              setEndDate(preset.date)
+                              if (validationErrors.endDate) {
+                                setValidationErrors(prev => ({ ...prev, endDate: '' }))
+                              }
+                            }}
+                            className="px-3 py-1 text-xs bg-slate-800/50 border border-slate-600/50 rounded-md text-slate-300 hover:bg-slate-700/50 hover:border-red-400/50 transition-colors"
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </motion.div>
 
-                  {/* Quick date presets */}
+                  {/* Cost Field */}
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.35 }}
-                    className="space-y-2"
                   >
-                    <p className="text-xs text-slate-400 font-medium">Quick Presets:</p>
-                    <div className="flex gap-2 flex-wrap">
-                      {getQuickDates().map((preset, index) => (
-                        <button
-                          key={preset.label}
-                          type="button"
-                          onClick={() => {
-                            setEndDate(preset.date)
-                            if (validationErrors.endDate) {
-                              setValidationErrors(prev => ({ ...prev, endDate: '' }))
-                            }
-                          }}
-                          className="px-3 py-1 text-xs bg-slate-800/50 border border-slate-600/50 rounded-md text-slate-300 hover:bg-slate-700/50 hover:border-red-400/50 transition-colors"
-                        >
-                          {preset.label}
-                        </button>
-                      ))}
+                    <Input
+                      label="Cost (Optional)"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="999999.99"
+                      placeholder="0.00"
+                      value={cost}
+                      onChange={(e) => {
+                        setCost(e.target.value)
+                        if (validationErrors.cost) {
+                          setValidationErrors(prev => ({ ...prev, cost: '' }))
+                        }
+                      }}
+                      error={validationErrors.cost}
+                      className="bg-blue-50 border-slate-300 text-slate-900 placeholder:text-slate-500 shadow-sm focus-visible:ring-2 focus-visible:ring-offset-0"
+                    />
+                    
+                    {/* Billing Frequency Selector */}
+                    <div className="mt-2">
+                      <label className="block text-xs text-slate-400 mb-1">Billing Frequency:</label>
+                      <div className="flex gap-2 flex-wrap">
+                        {[
+                          { value: 'weekly', label: 'Weekly' },
+                          { value: 'fortnightly', label: 'Fortnightly' },
+                          { value: 'monthly', label: 'Monthly' },
+                          { value: 'yearly', label: 'Yearly' }
+                        ].map((freq) => (
+                          <button
+                            key={freq.value}
+                            type="button"
+                            onClick={() => setBillingFrequency(freq.value as any)}
+                            className={`px-3 py-1 text-xs rounded-md border transition-colors ${
+                              billingFrequency === freq.value
+                                ? 'bg-slate-700/50 border-green-400/50 text-green-300'
+                                : 'bg-slate-800/50 border-slate-600/50 text-slate-300 hover:bg-slate-700/50 hover:border-slate-500/50'
+                            }`}
+                          >
+                            {freq.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                </motion.div>
+                    
+                    <p className="text-xs text-slate-400 mt-2 flex items-center">
+                      <DollarSign className="w-3 h-3 mr-1" />
+                      Used to calculate money saved when trials are cancelled
+                    </p>
+                    
+                    {/* Common price presets */}
+                    <div className="mt-3 space-y-2">
+                      <p className="text-xs text-slate-400 font-medium">Common Costs:</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {getQuickPrices().map((preset) => (
+                          <button
+                            key={preset.label}
+                            type="button"
+                            onClick={() => {
+                              setCost(preset.price)
+                              if (validationErrors.cost) {
+                                setValidationErrors(prev => ({ ...prev, cost: '' }))
+                              }
+                            }}
+                            className="px-3 py-1 text-xs bg-slate-800/50 border border-slate-600/50 rounded-md text-slate-300 hover:bg-slate-700/50 hover:border-green-400/50 transition-colors"
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
 
                 {error && (
                   <motion.div
@@ -283,8 +384,8 @@ export default function AddTrialPage() {
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                    className="flex gap-3 pt-2"
+                  transition={{ delay: 0.6 }}
+                    className="flex gap-3 pt-1"
                 >
                   <Button
                     type="button"

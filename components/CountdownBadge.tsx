@@ -54,6 +54,7 @@ export function CountdownBadge({ daysLeft, isUrgent, isWarning }: CountdownBadge
         }
       `}
       animate={shouldPulse ? {
+        scale: [1, 1.15, 1],
         boxShadow: [
           '0 0 0 0 rgba(239, 68, 68, 0)',
           '0 0 0 6px rgba(239, 68, 68, 0.2)',

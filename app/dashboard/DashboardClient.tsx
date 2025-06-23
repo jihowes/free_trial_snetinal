@@ -18,6 +18,8 @@ interface Trial {
   id: string
   service_name: string
   end_date: string
+  cost?: number | null
+  billing_frequency?: 'weekly' | 'fortnightly' | 'monthly' | 'yearly'
   outcome?: 'active' | 'kept' | 'cancelled' | 'expired'
 }
 
@@ -321,6 +323,10 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
             <motion.header variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-3 border-b border-slate-700/50 mt-2">
               <div className="flex items-center gap-4 mb-3 md:mb-0">
                 <LogoIcon size="xl" />
+                <span className="ml-2 text-2xl font-black tracking-tight uppercase">
+                  <span className="text-white">FREE TRIAL </span>
+                  <span className="text-orange-500">SENTINEL</span>
+                </span>
               </div>
               <div className="flex items-center gap-3">
                 <Button 
@@ -436,6 +442,8 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
                           id={trial.id}
                           service_name={trial.service_name}
                           end_date={trial.end_date}
+                          cost={trial.cost}
+                          billing_frequency={trial.billing_frequency}
                           onDelete={handleDeleteTrial}
                           onAction={handleActionTrial}
                           index={index}
@@ -453,6 +461,19 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
                 )
                 
                 if (actionedTrials.length > 0) {
+                  // Calculate total money saved from graveyard
+                  const totalMoneySaved = actionedTrials.reduce((total, trial) => {
+                    if ((trial.outcome === 'cancelled' || trial.outcome === 'expired') && trial.cost) {
+                      return total + trial.cost
+                    } else if (trial.outcome === 'cancelled' || trial.outcome === 'expired') {
+                      return total + 10 // Estimated $10 if no cost set
+                    }
+                    return total
+                  }, 0)
+                  
+                  const cancelledTrials = actionedTrials.filter(t => t.outcome === 'cancelled').length
+                  const expiredTrials = actionedTrials.filter(t => t.outcome === 'expired').length
+                  
                   return (
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
@@ -462,7 +483,25 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
                     >
                       <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                          <span>🪦</span>
+                          <span>
+                            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                              <defs>
+                                <linearGradient id="tombstone-gradient" x1="0" y1="0" x2="0" y2="28" gradientUnits="userSpaceOnUse">
+                                  <stop stopColor="#e5e7eb"/>
+                                  <stop offset="1" stopColor="#94a3b8"/>
+                                </linearGradient>
+                              </defs>
+                              <path
+                                d="M7 22V13c0-5 3-8 7-8s7 3 7 8v9H7z"
+                                fill="url(#tombstone-gradient)"
+                                stroke="#64748B"
+                                strokeWidth="2"
+                              />
+                              <rect x="9" y="19" width="10" height="2" rx="1" fill="#64748B"/>
+                              <rect x="12" y="15" width="4" height="1.5" rx="0.75" fill="#64748B"/>
+                              <path d="M14 10v3M12.5 11.5h3" stroke="#64748B" strokeWidth="1.2" strokeLinecap="round"/>
+                            </svg>
+                          </span>
                           Trial Graveyard
                         </h2>
                         <span className="text-slate-400 text-sm">
@@ -475,12 +514,19 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
                           const status = trial.outcome || 'unknown'
                           const statusConfig = {
                             active: { icon: '⏳', label: 'Active', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
-                            cancelled: { icon: '✅', label: 'Cancelled', color: 'text-green-400', bgColor: 'bg-green-500/20' },
+                            cancelled: { icon: '✅', label: 'Cancelled', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
                             expired: { icon: '⏰', label: 'Past Expiry', color: 'text-red-400', bgColor: 'bg-red-500/20' },
                             kept: { icon: '💰', label: 'Kept', color: 'text-purple-400', bgColor: 'bg-purple-500/20' },
                             unknown: { icon: '❓', label: 'Unknown', color: 'text-yellow-400', bgColor: 'bg-yellow-500/20' }
                           }
                           const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.unknown
+                          
+                          // Calculate money saved for this trial
+                          const moneySaved = (status === 'cancelled' || status === 'expired') && trial.cost 
+                            ? trial.cost 
+                            : (status === 'cancelled' || status === 'expired') 
+                              ? 10 // Estimated $10 if no cost set
+                              : 0
                           
                           return (
                             <motion.div
@@ -505,7 +551,7 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
                                   </Button>
                                 </div>
                               </div>
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center justify-between mb-2">
                                 <span className={`text-xs px-2 py-1 rounded-full ${config.bgColor} ${config.color}`}>
                                   {config.label}
                                 </span>
@@ -513,6 +559,23 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
                                   {new Date(trial.end_date).toLocaleDateString()}
                                 </span>
                               </div>
+                              {/* Money saved display */}
+                              {(status === 'cancelled' || status === 'expired') && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-green-400 font-medium">
+                                    Saved: ${moneySaved.toFixed(2)}
+                                  </span>
+                                  {trial.cost ? (
+                                    <span className="text-xs text-slate-500">
+                                      ${trial.cost}/{trial.billing_frequency || 'month'}
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs text-slate-500">
+                                      Estimated
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                             </motion.div>
                           )
                         })}
