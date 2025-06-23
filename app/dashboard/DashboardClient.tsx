@@ -7,12 +7,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/Button'
 import { User } from '@supabase/supabase-js'
 import { LogoIcon } from '@/components/ui/Logo'
-import { LogOut, Plus, Search, Filter, RefreshCw, Trash2 } from 'lucide-react'
+import { LogOut, Plus, Search, Filter, RefreshCw, Trash2, Heart } from 'lucide-react'
 import FantasyBackgroundWrapper from '@/components/FantasyBackgroundWrapper'
 import { DashboardHeader } from '@/components/DashboardHeader'
 import { TrialCard } from '@/components/TrialCard'
 import { EmptyState } from '@/components/EmptyState'
 import { TrialOutcomeModal } from '@/components/TrialOutcomeModal'
+import { CurrencySelector } from '@/components/CurrencySelector'
+import { useCurrency, CurrencyProvider } from '@/components/CurrencyContext'
 
 interface Trial {
   id: string
@@ -21,6 +23,7 @@ interface Trial {
   cost?: number | null
   billing_frequency?: 'weekly' | 'fortnightly' | 'monthly' | 'yearly'
   outcome?: 'active' | 'kept' | 'cancelled' | 'expired'
+  liked?: boolean
 }
 
 interface DashboardClientProps {
@@ -29,6 +32,14 @@ interface DashboardClientProps {
 }
 
 export default function DashboardClient({ trials, user }: DashboardClientProps) {
+  return (
+    <CurrencyProvider>
+      <DashboardContent trials={trials} user={user} />
+    </CurrencyProvider>
+  )
+}
+
+function DashboardContent({ trials, user }: DashboardClientProps) {
   const [loading, setLoading] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -44,6 +55,7 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
   const [currentTime, setCurrentTime] = useState<Date>(new Date())
   const router = useRouter()
   const supabase = createClientComponentClient()
+  const { formatCurrency } = useCurrency()
 
   // Update current time every second
   useEffect(() => {
@@ -140,6 +152,28 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
     } finally {
       setLoading(false)
       setDeletingId(null)
+    }
+  }
+
+  const handleToggleLike = async (trialId: string, currentLiked: boolean) => {
+    setLoading(true)
+    try {
+      await supabase
+        .from('trials')
+        .update({ liked: !currentLiked })
+        .eq('id', trialId)
+      
+      // Update local state immediately for better UX
+      setCurrentTrials(prev => prev.map(trial => 
+        trial.id === trialId ? { ...trial, liked: !currentLiked } : trial
+      ))
+      
+      showToastMessage(currentLiked ? 'Removed from favorites' : 'Added to favorites')
+    } catch (error) {
+      console.error('Error toggling like:', error)
+      showToastMessage('Failed to update like status. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -329,6 +363,7 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
                 </span>
               </div>
               <div className="flex items-center gap-3">
+                <CurrencySelector />
                 <Button 
                   onClick={() => router.push('/dashboard/add-trial')}
                   className="bg-gradient-to-r from-fantasy-crimson to-fantasy-molten hover:from-fantasy-molten hover:to-fantasy-crimson text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-fantasy-crimson/25"
@@ -543,11 +578,16 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
                                   <Button
                                     variant="secondary"
                                     size="sm"
-                                    onClick={() => handleDeleteFromGraveyard(trial.id)}
-                                    className="p-1 rounded text-red-400 hover:text-red-300 hover:bg-red-500/20"
-                                    title="Permanently delete trial"
+                                    onClick={() => handleToggleLike(trial.id, trial.liked || false)}
+                                    disabled={loading}
+                                    className={`p-1 rounded transition-all duration-200 ${
+                                      trial.liked 
+                                        ? 'text-pink-400 hover:text-pink-300 hover:bg-pink-500/20' 
+                                        : 'text-slate-400 hover:text-pink-400 hover:bg-pink-500/20'
+                                    }`}
+                                    title={trial.liked ? 'Remove from favorites' : 'Add to favorites'}
                                   >
-                                    <Trash2 className="w-3 h-3" />
+                                    <Heart className={`w-3 h-3 ${trial.liked ? 'fill-current' : ''}`} />
                                   </Button>
                                 </div>
                               </div>
@@ -563,11 +603,11 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
                               {(status === 'cancelled' || status === 'expired') && (
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs text-green-400 font-medium">
-                                    Saved: ${moneySaved.toFixed(2)}
+                                    Saved: {formatCurrency(moneySaved)}
                                   </span>
                                   {trial.cost ? (
                                     <span className="text-xs text-slate-500">
-                                      ${trial.cost}/{trial.billing_frequency || 'month'}
+                                      {formatCurrency(trial.cost)}/{trial.billing_frequency || 'month'}
                                     </span>
                                   ) : (
                                     <span className="text-xs text-slate-500">
@@ -637,34 +677,34 @@ export default function DashboardClient({ trials, user }: DashboardClientProps) 
             </main>
           </motion.div>
         </div>
-      </div>
 
-      {/* Toast Notification */}
-      <AnimatePresence>
-        {showToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            className="fixed bottom-4 right-4 bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 shadow-lg z-50"
-          >
-            <p className="text-white text-sm">{toastMessage}</p>
-          </motion.div>
+        {/* Toast Notification */}
+        <AnimatePresence>
+          {showToast && (
+            <motion.div
+              initial={{ opacity: 0, y: 50, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 50, scale: 0.9 }}
+              className="fixed bottom-4 right-4 bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 shadow-lg z-50"
+            >
+              <p className="text-white text-sm">{toastMessage}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Trial Outcome Modal */}
+        {expiredTrial && expiredTrial.id && expiredTrial.service_name && expiredTrial.end_date && (
+          <TrialOutcomeModal
+            isOpen={showOutcomeModal}
+            onClose={() => {
+              setShowOutcomeModal(false)
+              setExpiredTrial(null)
+            }}
+            trial={expiredTrial}
+            onOutcomeSelect={handleOutcomeSelect}
+          />
         )}
-      </AnimatePresence>
-
-      {/* Trial Outcome Modal */}
-      {expiredTrial && expiredTrial.id && expiredTrial.service_name && expiredTrial.end_date && (
-        <TrialOutcomeModal
-          isOpen={showOutcomeModal}
-          onClose={() => {
-            setShowOutcomeModal(false)
-            setExpiredTrial(null)
-          }}
-          trial={expiredTrial}
-          onOutcomeSelect={handleOutcomeSelect}
-        />
-      )}
+      </div>
     </FantasyBackgroundWrapper>
   )
 } 

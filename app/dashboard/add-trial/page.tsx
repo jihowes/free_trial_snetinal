@@ -10,8 +10,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ArrowLeft, Plus, Calendar, Clock, Shield, Zap, Sparkles, Eye, Bell, CheckCircle, DollarSign } from 'lucide-react'
 import FantasyBackgroundWrapper from '@/components/FantasyBackgroundWrapper'
 import { Logo, LogoIcon } from '@/components/ui/Logo'
+import { CurrencyProvider, useCurrency } from '@/components/CurrencyContext'
 
 export default function AddTrialPage() {
+  return (
+    <CurrencyProvider>
+      <AddTrialContent />
+    </CurrencyProvider>
+  )
+}
+
+function AddTrialContent() {
   const [serviceName, setServiceName] = useState('')
   const [endDate, setEndDate] = useState('')
   const [cost, setCost] = useState('')
@@ -22,15 +31,15 @@ export default function AddTrialPage() {
   const [mounted, setMounted] = useState(false)
   const router = useRouter()
   const supabase = createClientComponentClient()
+  const { currency } = useCurrency()
 
   useEffect(() => {
-    // Use a longer delay to ensure hydration is completely finished
-    const timer = setTimeout(() => {
-      setMounted(true)
-    }, 500)
-    
-    return () => clearTimeout(timer)
+    setMounted(true)
   }, [])
+
+  if (!mounted) {
+    return null
+  }
 
   // Quick date presets
   const getQuickDates = () => {
@@ -55,11 +64,11 @@ export default function AddTrialPage() {
   // Quick price presets
   const getQuickPrices = () => {
     return [
-      { label: '$9.99', price: '9.99' },
-      { label: '$14.99', price: '14.99' },
-      { label: '$19.99', price: '19.99' },
-      { label: '$29.99', price: '29.99' },
-      { label: '$49.99', price: '49.99' }
+      { label: `${currency.symbol}9.99`, price: '9.99' },
+      { label: `${currency.symbol}14.99`, price: '14.99' },
+      { label: `${currency.symbol}19.99`, price: '19.99' },
+      { label: `${currency.symbol}29.99`, price: '29.99' },
+      { label: `${currency.symbol}49.99`, price: '49.99' }
     ]
   }
 
@@ -317,8 +326,30 @@ export default function AddTrialPage() {
                       className="bg-blue-50 border-slate-300 text-slate-900 placeholder:text-slate-500 shadow-sm focus-visible:ring-2 focus-visible:ring-offset-0"
                     />
                     
+                    {/* Common price presets */}
+                    <div className="mt-2 space-y-1">
+                      <p className="text-xs text-slate-400 font-medium">Common Costs:</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {getQuickPrices().map((preset) => (
+                          <button
+                            key={preset.label}
+                            type="button"
+                            onClick={() => {
+                              setCost(preset.price)
+                              if (validationErrors.cost) {
+                                setValidationErrors(prev => ({ ...prev, cost: '' }))
+                              }
+                            }}
+                            className="px-3 py-1 text-xs bg-slate-800/50 border border-slate-600/50 rounded-md text-slate-300 hover:bg-slate-700/50 hover:border-green-400/50 transition-colors"
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    
                     {/* Billing Frequency Selector */}
-                    <div className="mt-2">
+                    <div className="mt-3">
                       <label className="block text-xs text-slate-400 mb-1">Billing Frequency:</label>
                       <div className="flex gap-2 flex-wrap">
                         {[
@@ -342,33 +373,6 @@ export default function AddTrialPage() {
                         ))}
                       </div>
                     </div>
-                    
-                    <p className="text-xs text-slate-400 mt-2 flex items-center">
-                      <DollarSign className="w-3 h-3 mr-1" />
-                      Used to calculate money saved when trials are cancelled
-                    </p>
-                    
-                    {/* Common price presets */}
-                    <div className="mt-3 space-y-2">
-                      <p className="text-xs text-slate-400 font-medium">Common Costs:</p>
-                      <div className="flex gap-2 flex-wrap">
-                        {getQuickPrices().map((preset) => (
-                          <button
-                            key={preset.label}
-                            type="button"
-                            onClick={() => {
-                              setCost(preset.price)
-                              if (validationErrors.cost) {
-                                setValidationErrors(prev => ({ ...prev, cost: '' }))
-                              }
-                            }}
-                            className="px-3 py-1 text-xs bg-slate-800/50 border border-slate-600/50 rounded-md text-slate-300 hover:bg-slate-700/50 hover:border-green-400/50 transition-colors"
-                          >
-                            {preset.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
                 </motion.div>
 
                 {error && (
@@ -385,7 +389,7 @@ export default function AddTrialPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.6 }}
-                    className="flex gap-3 pt-1"
+                    className="flex gap-3"
                 >
                   <Button
                     type="button"
@@ -422,7 +426,7 @@ export default function AddTrialPage() {
           {/* What happens next */}
         <motion.div 
           variants={itemVariants}
-            className="mt-4 grid grid-cols-1 gap-3"
+            className="mt-1 grid grid-cols-1 gap-3"
           >
             <div className="flex items-center space-x-3 p-3 rounded-lg bg-slate-800/30 border border-slate-700/50 backdrop-blur-sm">
               <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">

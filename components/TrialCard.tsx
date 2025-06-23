@@ -7,6 +7,7 @@ import { Card } from './ui/Card'
 import { CountdownBadge } from './CountdownBadge'
 import { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { useCurrency } from './CurrencyContext'
 
 interface TrialCardProps {
   id: string
@@ -24,6 +25,7 @@ export function TrialCard({ id, service_name, end_date, cost, billing_frequency,
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownButtonRef = useRef<HTMLDivElement>(null)
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null)
+  const { formatCurrency } = useCurrency()
 
   useEffect(() => {
     setMounted(true)
@@ -235,7 +237,7 @@ export function TrialCard({ id, service_name, end_date, cost, billing_frequency,
                   {cost && cost > 0 && daysLeft >= 0 && (
                     <div className="flex items-center gap-1 mt-1">
                       <span className="text-xs text-slate-500">
-                        ${cost.toFixed(2)}/{billing_frequency || 'month'}
+                        {typeof formatCurrency === 'function' ? formatCurrency(cost) : `$${cost.toFixed(2)}`}/{billing_frequency || 'month'}
                       </span>
                     </div>
                   )}

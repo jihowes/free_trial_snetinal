@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { Clock, AlertTriangle, CheckCircle, DollarSign, XCircle, Calendar, TrendingUp } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useCurrency } from './CurrencyContext'
 
 interface Trial {
   id: string
@@ -11,6 +12,7 @@ interface Trial {
   cost?: number | null
   billing_frequency?: 'weekly' | 'fortnightly' | 'monthly' | 'yearly'
   outcome?: 'active' | 'kept' | 'cancelled' | 'expired'
+  liked?: boolean
 }
 
 interface DashboardHeaderProps {
@@ -28,6 +30,7 @@ export function DashboardHeader({ userName, totalTrials, trials, nextExpiringTri
   const [currentTime, setCurrentTime] = useState<Date | null>(null)
   const [mounted, setMounted] = useState(false)
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(true)
+  const { formatCurrency } = useCurrency()
 
   useEffect(() => {
     setMounted(true)
@@ -158,9 +161,9 @@ export function DashboardHeader({ userName, totalTrials, trials, nextExpiringTri
     // Users with savings (have cancelled/expired trials)
     if (cancelledTrials > 0 || expiredTrials > 0) {
       if (moneySaved.totalSaved > 0) {
-        return `Great to see you, ${displayName}! You've already cancelled ${cancelledTrials + expiredTrials} trials on time and saved about $${moneySaved.totalSaved.toFixed(2)} - well done! Did you know the average American wastes $32 monthly on unused subscriptions? You're beating the average!`
+        return `Great to see you, ${displayName}! You've already cancelled ${cancelledTrials + expiredTrials} trial${cancelledTrials + expiredTrials === 1 ? '' : 's'} on time and saved about ${formatCurrency(moneySaved.totalSaved)} - well done! Did you know the average American wastes $32 monthly on unused subscriptions? You're beating the average!`
       } else {
-        return `Great to see you, ${displayName}! You've already cancelled ${cancelledTrials + expiredTrials} trials on time - well done! Did you know the average American wastes $32 monthly on unused subscriptions? You're beating the average!`
+        return `Great to see you, ${displayName}! You've already cancelled ${cancelledTrials + expiredTrials} trial${cancelledTrials + expiredTrials === 1 ? '' : 's'} on time - well done! Did you know the average American wastes $32 monthly on unused subscriptions? You're beating the average!`
       }
     }
     
@@ -244,58 +247,60 @@ export function DashboardHeader({ userName, totalTrials, trials, nextExpiringTri
         className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4"
       >
         {/* Money Saved Banner */}
-        {(cancelledTrials > 0 || expiredTrials > 0) && (
-          <div className="p-6 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 backdrop-blur-sm">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 rounded-lg bg-green-500/30">
-                <TrendingUp className="w-6 h-6 text-green-400" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-xl font-bold text-white mb-1">
-                  Money Saved
-                </h2>
-                <p className="text-green-300 text-sm">
-                  {moneySaved.hasRealCosts 
-                    ? `Based on ${cancelledTrials + expiredTrials} avoided charges`
-                    : `Estimated savings from ${cancelledTrials + expiredTrials} avoided trials`
-                  }
-                </p>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-green-400">
-                  ${moneySaved.totalSaved.toFixed(2)}
-                </div>
+        <div className="p-4 md:p-6 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 backdrop-blur-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="flex-shrink-0 p-2 md:p-3 rounded-lg bg-green-500/30 self-start sm:self-center">
+              <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-green-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg md:text-xl font-bold text-white mb-1">
+                Money Saved
+              </h2>
+              <p className="text-green-300 text-xs md:text-sm leading-relaxed">
+                {cancelledTrials > 0 || expiredTrials > 0
+                  ? (moneySaved.hasRealCosts 
+                      ? `Based on ${cancelledTrials + expiredTrials} avoided charge${cancelledTrials + expiredTrials === 1 ? '' : 's'}`
+                      : `Estimated savings from ${cancelledTrials + expiredTrials} avoided trial${cancelledTrials + expiredTrials === 1 ? '' : 's'}`
+                    )
+                  : `Haven't dodged any charges yet - stay sharp, Sentinel.`
+                }
+              </p>
+            </div>
+            <div className="flex-shrink-0 text-center sm:text-right">
+              <div className="text-xl md:text-2xl font-bold text-green-400">
+                {formatCurrency(moneySaved.totalSaved)}
               </div>
             </div>
           </div>
-        )}
+        </div>
 
         {/* Potential Savings Banner */}
-        {potentialSavings.potentialSavings > 0 && (
-          <div className="p-6 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/30 backdrop-blur-sm">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 rounded-lg bg-blue-500/30">
-                <DollarSign className="w-6 h-6 text-blue-400" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-xl font-bold text-white mb-1">
-                  Potential Savings
-                </h2>
-                <p className="text-blue-300 text-sm">
-                  {potentialSavings.trialsWithCost > 0 
-                    ? `From ${potentialSavings.trialsWithCost} active trials with costs`
-                    : `From ${potentialSavings.totalActiveTrials} active trials`
-                  }
-                </p>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-blue-400">
-                  ${potentialSavings.potentialSavings.toFixed(2)}
-                </div>
+        <div className="p-4 md:p-6 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/30 backdrop-blur-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="flex-shrink-0 p-2 md:p-3 rounded-lg bg-blue-500/30 self-start sm:self-center">
+              <DollarSign className="w-5 h-5 md:w-6 md:h-6 text-blue-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg md:text-xl font-bold text-white mb-1">
+                Potential Savings
+              </h2>
+              <p className="text-blue-300 text-xs md:text-sm leading-relaxed">
+                {potentialSavings.potentialSavings > 0
+                  ? (potentialSavings.trialsWithCost > 0 
+                      ? `From ${potentialSavings.trialsWithCost} active trial${potentialSavings.trialsWithCost === 1 ? '' : 's'} with costs`
+                      : `From ${potentialSavings.totalActiveTrials} active trial${potentialSavings.totalActiveTrials === 1 ? '' : 's'}`
+                    )
+                  : `No cost-tracked trials yet - add one to estimate potential savings.`
+                }
+              </p>
+            </div>
+            <div className="flex-shrink-0 text-center sm:text-right">
+              <div className="text-xl md:text-2xl font-bold text-blue-400">
+                {formatCurrency(potentialSavings.potentialSavings)}
               </div>
             </div>
           </div>
-        )}
+        </div>
       </motion.div>
 
       {/* Quick Stats */}
