@@ -234,13 +234,13 @@ export default function AddTrialPage() {
                     type="text"
                     placeholder="e.g., Netflix, Spotify, Adobe Creative Suite"
                     value={serviceName}
-                    onChange={(e) => {
-                      setServiceName(e.target.value)
-                      if (validationErrors.serviceName) {
-                        setValidationErrors(prev => ({ ...prev, serviceName: '' }))
-                      }
-                    }}
-                    error={validationErrors.serviceName}
+                      onChange={(e) => {
+                        setServiceName(e.target.value)
+                        if (validationErrors.serviceName) {
+                          setValidationErrors(prev => ({ ...prev, serviceName: '' }))
+                        }
+                      }}
+                      error={validationErrors.serviceName}
                     className="bg-blue-50 border-slate-300 text-slate-900 placeholder:text-slate-500 shadow-sm focus-visible:ring-2 focus-visible:ring-offset-0"
                     required
                   />
@@ -255,13 +255,13 @@ export default function AddTrialPage() {
                     label="End Date"
                     type="date"
                     value={endDate}
-                    onChange={(e) => {
-                      setEndDate(e.target.value)
-                      if (validationErrors.endDate) {
-                        setValidationErrors(prev => ({ ...prev, endDate: '' }))
-                      }
-                    }}
-                    error={validationErrors.endDate}
+                      onChange={(e) => {
+                        setEndDate(e.target.value)
+                        if (validationErrors.endDate) {
+                          setValidationErrors(prev => ({ ...prev, endDate: '' }))
+                        }
+                      }}
+                      error={validationErrors.endDate}
                     className="bg-blue-50 border-slate-300 text-slate-900 placeholder:text-slate-500 shadow-sm focus-visible:ring-2 focus-visible:ring-offset-0"
                     required
                   />
@@ -273,22 +273,22 @@ export default function AddTrialPage() {
                     {/* Common date presets */}
                     <div className="mt-2 space-y-1">
                       <p className="text-xs text-slate-400 font-medium">Common Dates:</p>
-                      <div className="flex gap-2 flex-wrap">
-                        {getQuickDates().map((preset, index) => (
-                          <button
-                            key={preset.label}
-                            type="button"
-                            onClick={() => {
-                              setEndDate(preset.date)
-                              if (validationErrors.endDate) {
-                                setValidationErrors(prev => ({ ...prev, endDate: '' }))
-                              }
-                            }}
-                            className="px-3 py-1 text-xs bg-slate-800/50 border border-slate-600/50 rounded-md text-slate-300 hover:bg-slate-700/50 hover:border-red-400/50 transition-colors"
-                          >
-                            {preset.label}
-                          </button>
-                        ))}
+                    <div className="flex gap-2 flex-wrap">
+                      {getQuickDates().map((preset, index) => (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => {
+                            setEndDate(preset.date)
+                            if (validationErrors.endDate) {
+                              setValidationErrors(prev => ({ ...prev, endDate: '' }))
+                            }
+                          }}
+                          className="px-3 py-1 text-xs bg-slate-800/50 border border-slate-600/50 rounded-md text-slate-300 hover:bg-slate-700/50 hover:border-red-400/50 transition-colors"
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
                       </div>
                     </div>
                   </motion.div>
@@ -369,7 +369,7 @@ export default function AddTrialPage() {
                         ))}
                       </div>
                     </div>
-                  </motion.div>
+                </motion.div>
 
                 {error && (
                   <motion.div

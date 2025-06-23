@@ -27,9 +27,17 @@ export function DashboardHeader({ userName, totalTrials, trials, nextExpiringTri
   const [greeting, setGreeting] = useState('')
   const [currentTime, setCurrentTime] = useState<Date | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [showWelcomeMessage, setShowWelcomeMessage] = useState(true)
 
   useEffect(() => {
     setMounted(true)
+    
+    // Check if user has dismissed the welcome message
+    const dismissed = localStorage.getItem('welcomeMessageDismissed')
+    if (dismissed) {
+      setShowWelcomeMessage(false)
+    }
+    
     const updateGreeting = () => {
       const now = new Date()
       const hour = now.getHours()
@@ -55,6 +63,11 @@ export function DashboardHeader({ userName, totalTrials, trials, nextExpiringTri
 
     return () => clearInterval(interval)
   }, [])
+
+  const handleDismissWelcome = () => {
+    setShowWelcomeMessage(false)
+    localStorage.setItem('welcomeMessageDismissed', 'true')
+  }
 
   // Calculate money saved based on actual costs
   const calculateMoneySaved = () => {
@@ -133,31 +146,31 @@ export function DashboardHeader({ userName, totalTrials, trials, nextExpiringTri
   const moneySaved = calculateMoneySaved()
   const potentialSavings = calculatePotentialSavings()
 
-  // Get encouraging message
-  const getEncouragingMessage = () => {
-    const expiringSoon = trials.filter(trial => {
-      const daysLeft = Math.ceil((new Date(trial.end_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-      // Only count active trials (not actioned ones)
-      const isActive = trial.outcome === 'active' || trial.outcome === null || trial.outcome === undefined
-      return daysLeft <= 7 && daysLeft > 0 && isActive
-    }).length
-
-    if (expiringSoon === 0 && activeTrials > 0) {
-      if (potentialSavings.potentialSavings > 0) {
-        return `You're all clear! No trials expiring this week. You could save $${potentialSavings.potentialSavings.toFixed(2)}/month by cancelling current trials.`
-      }
-      return "You're all clear! No trials expiring this week."
-    } else if (expiringSoon > 0) {
-      return `Warning: ${expiringSoon} trial${expiringSoon > 1 ? 's' : ''} expire${expiringSoon > 1 ? '' : 's'} in the next 7 days.`
-    } else if (cancelledTrials > 0 || expiredTrials > 0) {
-      if (moneySaved.totalSaved > 0) {
-        return `Excellent work! You've saved $${moneySaved.totalSaved.toFixed(2)} by avoiding auto-charges.`
-      } else {
-        return `Great job managing your trials! Add costs to see your exact savings.`
-      }
-    } else {
-      return `Welcome to Sentinel, ${userName}! The all-seeing eye is ready to watch over your free trials. Start adding them to never miss a deadline again.`
+  // Get dynamic welcome/encouraging message
+  const getWelcomeMessage = () => {
+    const displayName = userName || 'User'
+    
+    // New users (no trials at all)
+    if (totalTrials === 0) {
+      return `Welcome, ${displayName}! Did you know nearly 1 in 2 households unknowingly pay for unused subscriptions? Track your first trial here - your wallet will thank you in a few weeks!`
     }
+    
+    // Users with savings (have cancelled/expired trials)
+    if (cancelledTrials > 0 || expiredTrials > 0) {
+      if (moneySaved.totalSaved > 0) {
+        return `Great to see you, ${displayName}! You've already cancelled ${cancelledTrials + expiredTrials} trials on time and saved about $${moneySaved.totalSaved.toFixed(2)} - well done! Did you know the average American wastes $32 monthly on unused subscriptions? You're beating the average!`
+      } else {
+        return `Great to see you, ${displayName}! You've already cancelled ${cancelledTrials + expiredTrials} trials on time - well done! Did you know the average American wastes $32 monthly on unused subscriptions? You're beating the average!`
+      }
+    }
+    
+    // Users with active trials but no savings yet
+    if (activeTrials > 0) {
+      return `Welcome back, ${displayName}! You've made a smart choice - nearly half of all households carry forgotten subscriptions that cost about £14/month or $33/month on average. By tracking your trials, you're saving money that most people lose without even realizing it. Nice work - your Sentinel is on guard!`
+    }
+    
+    // Fallback
+    return `Welcome to Sentinel, ${displayName}! The all-seeing eye is ready to watch over your free trials. Start adding them to never miss a deadline again.`
   }
 
   const stats = [
@@ -198,11 +211,36 @@ export function DashboardHeader({ userName, totalTrials, trials, nextExpiringTri
       transition={{ duration: 0.6 }}
       className="mb-8"
     >
+      {/* Welcome Message */}
+      {showWelcomeMessage && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.6 }}
+          className="mb-6 relative"
+        >
+          <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm">
+            <button
+              onClick={handleDismissWelcome}
+              className="absolute top-2 right-2 text-slate-400 hover:text-slate-300 transition-colors"
+              title="Dismiss message"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <p className="text-slate-300 text-sm md:text-base pr-6">
+              {getWelcomeMessage()}
+            </p>
+          </div>
+        </motion.div>
+      )}
+
       {/* Money Saved and Potential Savings Banners */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.6 }}
+        transition={{ delay: 0.2, duration: 0.6 }}
         className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4"
       >
         {/* Money Saved Banner */}
@@ -226,9 +264,6 @@ export function DashboardHeader({ userName, totalTrials, trials, nextExpiringTri
               <div className="text-right">
                 <div className="text-2xl font-bold text-green-400">
                   ${moneySaved.totalSaved.toFixed(2)}
-                </div>
-                <div className="text-xs text-green-300">
-                  {moneySaved.hasRealCosts ? 'Real costs' : 'Estimate'}
                 </div>
               </div>
             </div>
@@ -257,33 +292,10 @@ export function DashboardHeader({ userName, totalTrials, trials, nextExpiringTri
                 <div className="text-2xl font-bold text-blue-400">
                   ${potentialSavings.potentialSavings.toFixed(2)}
                 </div>
-                <div className="text-xs text-blue-300">
-                  {potentialSavings.trialsWithCost > 0 ? 'Real costs' : 'Estimate'}
-                </div>
               </div>
             </div>
           </div>
         )}
-      </motion.div>
-
-      {/* Greeting */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.2, duration: 0.6 }}
-        className="mb-6"
-      >
-        {/* Encouraging Message */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
-          className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm"
-        >
-          <p className="text-slate-300 text-sm md:text-base">
-            {getEncouragingMessage()}
-          </p>
-        </motion.div>
       </motion.div>
 
       {/* Quick Stats */}
