@@ -13,6 +13,7 @@ import { DashboardHeader } from '@/components/DashboardHeader'
 import { TrialCard } from '@/components/TrialCard'
 import { EmptyState } from '@/components/EmptyState'
 import { TrialOutcomeModal } from '@/components/TrialOutcomeModal'
+import { FeedbackModal } from '@/components/FeedbackModal'
 import { CurrencySelector } from '@/components/CurrencySelector'
 import { useCurrency, CurrencyProvider } from '@/components/CurrencyContext'
 
@@ -33,9 +34,11 @@ interface DashboardClientProps {
 
 export default function DashboardClient({ trials, user }: DashboardClientProps) {
   return (
-    <CurrencyProvider>
-      <DashboardContent trials={trials} user={user} />
-    </CurrencyProvider>
+    <>
+      <CurrencyProvider>
+        <DashboardContent trials={trials} user={user} />
+      </CurrencyProvider>
+    </>
   )
 }
 
@@ -47,6 +50,7 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
   const [showOutcomeModal, setShowOutcomeModal] = useState(false)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
   const [expiredTrial, setExpiredTrial] = useState<Trial | null>(null)
   const [processedTrials, setProcessedTrials] = useState<Set<string>>(new Set())
   const [currentTrials, setCurrentTrials] = useState<Trial[]>(trials)
@@ -345,366 +349,383 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
   }
 
   return (
-    <FantasyBackgroundWrapper showEmbers={true} showEyeGlow={true} showFloatingEye={true}>
-      <div className="min-h-screen bg-gradient-to-br from-fantasy-obsidian via-fantasy-charcoal to-fantasy-shadow">
-        <div className="w-full max-w-[1400px] mx-auto p-4 md:p-8">
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            {/* Header */}
-            <motion.header variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-3 border-b border-slate-700/50 mt-2">
-              <div className="flex items-center gap-4 mb-3 md:mb-0">
-                <LogoIcon size="xl" />
-                <span className="ml-2 text-2xl font-black tracking-tight uppercase">
-                  <span className="text-white">FREE TRIAL </span>
-                  <span className="text-orange-500">SENTINEL</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <CurrencySelector />
-                <Button 
-                  onClick={() => router.push('/dashboard/add-trial')}
-                  className="bg-gradient-to-r from-fantasy-crimson to-fantasy-molten hover:from-fantasy-molten hover:to-fantasy-crimson text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-fantasy-crimson/25"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add New Trial
-                </Button>
-                <Button 
-                  variant="secondary"
-                  onClick={handleManualRefresh}
-                  disabled={refreshing}
-                  className="text-slate-400 hover:text-white hover:bg-slate-700/50"
-                >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                  {refreshing ? 'Refreshing...' : 'Refresh'}
-                </Button>
-                <Button 
-                  variant="secondary" 
-                  onClick={handleLogout}
-                  className="text-slate-400 hover:text-white hover:bg-slate-700/50"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
-                </Button>
-              </div>
-            </motion.header>
-
-            {/* Dashboard Header with greeting and stats */}
-            <DashboardHeader 
-              userName={user.email?.split('@')[0] || 'User'}
-              totalTrials={currentTrials.length}
-              trials={currentTrials}
-              nextExpiringTrial={nextExpiringTrial}
-            />
-
-            {/* Search and Sort Controls */}
-            {currentTrials.length > 0 && (
-              <motion.div 
-                variants={itemVariants}
-                className="mb-6 space-y-4"
-              >
-                {/* Filter Toggle */}
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { key: 'all', label: 'All' },
-                    { key: 'expiring', label: 'Expiring Soon' }
-                  ].map((filter) => (
-                    <button
-                      key={filter.key}
-                      onClick={() => setFilterBy(filter.key as any)}
-                      className={`
-                        px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
-                        ${filterBy === filter.key 
-                          ? 'bg-fantasy-crimson text-white shadow-lg' 
-                          : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50 hover:text-white border border-slate-700/50'
-                        }
-                      `}
-                    >
-                      {filter.label}
-                    </button>
-                  ))}
+    <>
+      <FantasyBackgroundWrapper showEmbers={true} showEyeGlow={true} showFloatingEye={true}>
+        <div className="min-h-screen bg-gradient-to-br from-fantasy-obsidian via-fantasy-charcoal to-fantasy-shadow">
+          <div className="w-full max-w-[1400px] mx-auto p-4 md:p-8">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {/* Header */}
+              <motion.header variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-3 border-b border-slate-700/50 mt-2">
+                <div className="flex items-center gap-4 mb-3 md:mb-0">
+                  <LogoIcon size="xl" />
+                  <span className="ml-2 text-2xl font-black tracking-tight uppercase">
+                    <span className="text-white">FREE TRIAL </span>
+                    <span className="text-orange-500">SENTINEL</span>
+                  </span>
                 </div>
+                <div className="flex items-center gap-3">
+                  <CurrencySelector />
+                  <Button 
+                    onClick={() => router.push('/dashboard/add-trial')}
+                    className="bg-gradient-to-r from-fantasy-crimson to-fantasy-molten hover:from-fantasy-molten hover:to-fantasy-crimson text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-fantasy-crimson/25"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add New Trial
+                  </Button>
+                  <Button 
+                    variant="secondary"
+                    onClick={handleManualRefresh}
+                    disabled={refreshing}
+                    className="text-slate-400 hover:text-white hover:bg-slate-700/50"
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                    {refreshing ? 'Refreshing...' : 'Refresh'}
+                  </Button>
+                  <Button 
+                    variant="secondary" 
+                    onClick={handleLogout}
+                    className="text-slate-400 hover:text-white hover:bg-slate-700/50"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </Button>
+                </div>
+              </motion.header>
 
-                {/* Search */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-                    <input
-                      type="text"
-                      placeholder="Search trials..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-fantasy-crimson/50 focus:border-fantasy-crimson/50"
-                    />
+              {/* Dashboard Header with greeting and stats */}
+              <DashboardHeader 
+                userName={user.email?.split('@')[0] || 'User'}
+                totalTrials={currentTrials.length}
+                trials={currentTrials}
+                nextExpiringTrial={nextExpiringTrial}
+              />
+
+              {/* Search and Sort Controls */}
+              {currentTrials.length > 0 && (
+                <motion.div 
+                  variants={itemVariants}
+                  className="mb-6 space-y-4"
+                >
+                  {/* Filter Toggle */}
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { key: 'all', label: 'All' },
+                      { key: 'expiring', label: 'Expiring Soon' }
+                    ].map((filter) => (
+                      <button
+                        key={filter.key}
+                        onClick={() => setFilterBy(filter.key as any)}
+                        className={`
+                          px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
+                          ${filterBy === filter.key 
+                            ? 'bg-fantasy-crimson text-white shadow-lg' 
+                            : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50 hover:text-white border border-slate-700/50'
+                          }
+                        `}
+                      >
+                        {filter.label}
+                      </button>
+                    ))}
                   </div>
-                </div>
-              </motion.div>
-            )}
 
-            {/* Main Content */}
-            <main className="space-y-8">
-              <AnimatePresence mode="wait">
-                {currentTrials.length === 0 ? (
-                  <EmptyState key="empty" />
-                ) : filteredAndSortedTrials.length === 0 ? (
-                  <motion.div
-                    key="no-results"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="text-center py-16"
-                  >
-                    <div className="text-slate-400 mb-4">
-                      <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <h3 className="text-xl font-semibold text-white mb-2">No trials found</h3>
-                      <p>Try adjusting your search terms or filters</p>
+                  {/* Search */}
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                      <input
+                        type="text"
+                        placeholder="Search trials..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-fantasy-crimson/50 focus:border-fantasy-crimson/50"
+                      />
                     </div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="trials-grid"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6"
-                  >
-                    <AnimatePresence>
-                      {filteredAndSortedTrials.map((trial, index) => (
-                        <TrialCard
-                          key={trial.id}
-                          id={trial.id}
-                          service_name={trial.service_name}
-                          end_date={trial.end_date}
-                          cost={trial.cost}
-                          billing_frequency={trial.billing_frequency}
-                          onDelete={handleDeleteTrial}
-                          onAction={handleActionTrial}
-                          index={index}
-                        />
-                      ))}
-                    </AnimatePresence>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  </div>
+                </motion.div>
+              )}
 
-              {/* Trial Outcome History (Graveyard) */}
-              {(() => {
-                const actionedTrials = currentTrials.filter(trial => 
-                  trial.outcome === 'kept' || trial.outcome === 'cancelled' || trial.outcome === 'expired'
-                )
-                
-                if (actionedTrials.length > 0) {
-                  // Calculate total money saved from graveyard
-                  const totalMoneySaved = actionedTrials.reduce((total, trial) => {
-                    if ((trial.outcome === 'cancelled' || trial.outcome === 'expired') && trial.cost) {
-                      return total + trial.cost
-                    } else if (trial.outcome === 'cancelled' || trial.outcome === 'expired') {
-                      return total + 10 // Estimated $10 if no cost set
-                    }
-                    return total
-                  }, 0)
-                  
-                  const cancelledTrials = actionedTrials.filter(t => t.outcome === 'cancelled').length
-                  const expiredTrials = actionedTrials.filter(t => t.outcome === 'expired').length
-                  
-                  return (
+              {/* Main Content */}
+              <main className="space-y-8">
+                <AnimatePresence mode="wait">
+                  {currentTrials.length === 0 ? (
+                    <EmptyState key="empty" />
+                  ) : filteredAndSortedTrials.length === 0 ? (
                     <motion.div
+                      key="no-results"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2, duration: 0.6 }}
-                      className="border-t border-slate-700/50 pt-8"
+                      exit={{ opacity: 0, y: -20 }}
+                      className="text-center py-16"
                     >
-                      <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                          <span>
-                            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                              <defs>
-                                <linearGradient id="tombstone-gradient" x1="0" y1="0" x2="0" y2="28" gradientUnits="userSpaceOnUse">
-                                  <stop stopColor="#e5e7eb"/>
-                                  <stop offset="1" stopColor="#94a3b8"/>
-                                </linearGradient>
-                              </defs>
-                              <path
-                                d="M7 22V13c0-5 3-8 7-8s7 3 7 8v9H7z"
-                                fill="url(#tombstone-gradient)"
-                                stroke="#64748B"
-                                strokeWidth="2"
-                              />
-                              <rect x="9" y="19" width="10" height="2" rx="1" fill="#64748B"/>
-                              <rect x="12" y="15" width="4" height="1.5" rx="0.75" fill="#64748B"/>
-                              <path d="M14 10v3M12.5 11.5h3" stroke="#64748B" strokeWidth="1.2" strokeLinecap="round"/>
-                            </svg>
-                          </span>
-                          Trial Graveyard
-                        </h2>
-                        <span className="text-slate-400 text-sm">
-                          {actionedTrials.length} actioned trial{actionedTrials.length > 1 ? 's' : ''}
-                        </span>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {actionedTrials.map((trial, index) => {
-                          const status = trial.outcome || 'unknown'
-                          const statusConfig = {
-                            active: { icon: '⏳', label: 'Active', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
-                            cancelled: { icon: '✅', label: 'Cancelled', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
-                            expired: { icon: '⏰', label: 'Past Expiry', color: 'text-red-400', bgColor: 'bg-red-500/20' },
-                            kept: { icon: '💰', label: 'Kept', color: 'text-purple-400', bgColor: 'bg-purple-500/20' },
-                            unknown: { icon: '❓', label: 'Unknown', color: 'text-yellow-400', bgColor: 'bg-yellow-500/20' }
-                          }
-                          const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.unknown
-                          
-                          // Calculate money saved for this trial
-                          const moneySaved = (status === 'cancelled' || status === 'expired') && trial.cost 
-                            ? trial.cost 
-                            : (status === 'cancelled' || status === 'expired') 
-                              ? 10 // Estimated $10 if no cost set
-                              : 0
-                          
-                          return (
-                            <motion.div
-                              key={trial.id}
-                              initial={{ opacity: 0, scale: 0.95 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ delay: index * 0.1, duration: 0.4 }}
-                              className="p-4 rounded-lg border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm hover:bg-slate-800/50 transition-all duration-300"
-                            >
-                              <div className="flex items-start justify-between mb-3">
-                                <h3 className="font-semibold text-white text-sm">{trial.service_name}</h3>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-lg">{config.icon}</span>
-                                  <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={() => handleToggleLike(trial.id, trial.liked || false)}
-                                    disabled={loading}
-                                    className={`p-1 rounded transition-all duration-200 ${
-                                      trial.liked 
-                                        ? 'text-pink-400 hover:text-pink-300 hover:bg-pink-500/20' 
-                                        : 'text-slate-400 hover:text-pink-400 hover:bg-pink-500/20'
-                                    }`}
-                                    title={trial.liked ? 'Remove from favorites' : 'Add to favorites'}
-                                  >
-                                    <Heart className={`w-3 h-3 ${trial.liked ? 'fill-current' : ''}`} />
-                                  </Button>
-                                </div>
-                              </div>
-                              <div className="flex items-center justify-between mb-2">
-                                <span className={`text-xs px-2 py-1 rounded-full ${config.bgColor} ${config.color}`}>
-                                  {config.label}
-                                </span>
-                                <span className="text-xs text-slate-400">
-                                  {new Date(trial.end_date).toLocaleDateString()}
-                                </span>
-                              </div>
-                              {/* Money saved display */}
-                              {(status === 'cancelled' || status === 'expired') && (
-                                <div className="flex items-center justify-between">
-                                  <span className="text-xs text-green-400 font-medium">
-                                    Saved: {formatCurrency(moneySaved)}
-                                  </span>
-                                  {trial.cost ? (
-                                    <span className="text-xs text-slate-500">
-                                      {formatCurrency(trial.cost)}/{trial.billing_frequency || 'month'}
-                                    </span>
-                                  ) : (
-                                    <span className="text-xs text-slate-500">
-                                      Estimated
-                                    </span>
-                                  )}
-                                </div>
-                              )}
-                            </motion.div>
-                          )
-                        })}
+                      <div className="text-slate-400 mb-4">
+                        <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <h3 className="text-xl font-semibold text-white mb-2">No trials found</h3>
+                        <p>Try adjusting your search terms or filters</p>
                       </div>
                     </motion.div>
-                  )
-                }
-                return null
-              })()}
-
-              {/* Coming Soon Features */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.6 }}
-                className="border-t border-slate-700/50 pt-8"
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                    <span>🚀</span>
-                    Coming Soon
-                  </h2>
-                  <span className="text-slate-400 text-sm">Future Enhancements</span>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {[
-                    { icon: '📧', title: 'Gmail Inbox Sync', description: 'Auto-detect trial emails' },
-                    { icon: '📅', title: 'Calendar Reminders', description: 'Smart notification system' },
-                    { icon: '🧠', title: 'Smart Suggestions', description: 'AI-powered recommendations' },
-                    { icon: '🤖', title: 'Auto-Cancel Assist', description: 'One-click trial cancellation' }
-                  ].map((feature, index) => (
+                  ) : (
                     <motion.div
-                      key={feature.title}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.6 + index * 0.1, duration: 0.4 }}
-                      className="p-4 rounded-lg border border-slate-700/50 bg-slate-800/20 backdrop-blur-sm hover:bg-slate-800/40 transition-all duration-300 group"
+                      key="trials-grid"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6"
                     >
-                      <div className="flex items-center gap-3 mb-3">
-                        <span className="text-2xl">{feature.icon}</span>
-                        <div>
-                          <h3 className="font-semibold text-white text-sm">{feature.title}</h3>
-                          <span className="text-xs text-slate-400">{feature.description}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs px-2 py-1 rounded-full bg-fantasy-crimson/20 text-fantasy-crimson">
-                          Coming Soon
-                        </span>
-                        <span className="text-xs text-slate-500 group-hover:text-slate-400 transition-colors">
-                          🔒
-                        </span>
-                      </div>
+                      <AnimatePresence>
+                        {filteredAndSortedTrials.map((trial, index) => (
+                          <TrialCard
+                            key={trial.id}
+                            id={trial.id}
+                            service_name={trial.service_name}
+                            end_date={trial.end_date}
+                            cost={trial.cost}
+                            billing_frequency={trial.billing_frequency}
+                            onDelete={handleDeleteTrial}
+                            onAction={handleActionTrial}
+                            index={index}
+                          />
+                        ))}
+                      </AnimatePresence>
                     </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            </main>
-          </motion.div>
-        </div>
+                  )}
+                </AnimatePresence>
 
-        {/* Toast Notification */}
-        <AnimatePresence>
-          {showToast && (
-            <motion.div
-              initial={{ opacity: 0, y: 50, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 50, scale: 0.9 }}
-              className="fixed bottom-4 right-4 bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 shadow-lg z-50"
-            >
-              <p className="text-white text-sm">{toastMessage}</p>
+                {/* Trial Outcome History (Graveyard) */}
+                {(() => {
+                  const actionedTrials = currentTrials.filter(trial => 
+                    trial.outcome === 'kept' || trial.outcome === 'cancelled' || trial.outcome === 'expired'
+                  )
+                  
+                  if (actionedTrials.length > 0) {
+                    // Calculate total money saved from graveyard
+                    const totalMoneySaved = actionedTrials.reduce((total, trial) => {
+                      if ((trial.outcome === 'cancelled' || trial.outcome === 'expired') && trial.cost) {
+                        return total + trial.cost
+                      } else if (trial.outcome === 'cancelled' || trial.outcome === 'expired') {
+                        return total + 10 // Estimated $10 if no cost set
+                      }
+                      return total
+                    }, 0)
+                    
+                    const cancelledTrials = actionedTrials.filter(t => t.outcome === 'cancelled').length
+                    const expiredTrials = actionedTrials.filter(t => t.outcome === 'expired').length
+                    
+                    return (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2, duration: 0.6 }}
+                        className="border-t border-slate-700/50 pt-8"
+                      >
+                        <div className="flex items-center justify-between mb-6">
+                          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                            <span>
+                              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                                <defs>
+                                  <linearGradient id="tombstone-gradient" x1="0" y1="0" x2="0" y2="28" gradientUnits="userSpaceOnUse">
+                                    <stop stopColor="#e5e7eb"/>
+                                    <stop offset="1" stopColor="#94a3b8"/>
+                                  </linearGradient>
+                                </defs>
+                                <path
+                                  d="M7 22V13c0-5 3-8 7-8s7 3 7 8v9H7z"
+                                  fill="url(#tombstone-gradient)"
+                                  stroke="#64748B"
+                                  strokeWidth="2"
+                                />
+                                <rect x="9" y="19" width="10" height="2" rx="1" fill="#64748B"/>
+                                <rect x="12" y="15" width="4" height="1.5" rx="0.75" fill="#64748B"/>
+                                <path d="M14 10v3M12.5 11.5h3" stroke="#64748B" strokeWidth="1.2" strokeLinecap="round"/>
+                              </svg>
+                            </span>
+                            Trial Graveyard
+                          </h2>
+                          <span className="text-slate-400 text-sm">
+                            {actionedTrials.length} actioned trial{actionedTrials.length > 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                          {actionedTrials.map((trial, index) => {
+                            const status = trial.outcome || 'unknown'
+                            const statusConfig = {
+                              active: { icon: '⏳', label: 'Active', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
+                              cancelled: { icon: '✅', label: 'Cancelled', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
+                              expired: { icon: '⏰', label: 'Past Expiry', color: 'text-red-400', bgColor: 'bg-red-500/20' },
+                              kept: { icon: '💰', label: 'Kept', color: 'text-purple-400', bgColor: 'bg-purple-500/20' },
+                              unknown: { icon: '❓', label: 'Unknown', color: 'text-yellow-400', bgColor: 'bg-yellow-500/20' }
+                            }
+                            const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.unknown
+                            
+                            // Calculate money saved for this trial
+                            const moneySaved = (status === 'cancelled' || status === 'expired') && trial.cost 
+                              ? trial.cost 
+                              : (status === 'cancelled' || status === 'expired') 
+                                ? 10 // Estimated $10 if no cost set
+                                : 0
+                            
+                            return (
+                              <motion.div
+                                key={trial.id}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: index * 0.1, duration: 0.4 }}
+                                className="p-4 rounded-lg border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm hover:bg-slate-800/50 transition-all duration-300"
+                              >
+                                <div className="flex items-start justify-between mb-3">
+                                  <h3 className="font-semibold text-white text-sm">{trial.service_name}</h3>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-lg">{config.icon}</span>
+                                    <Button
+                                      variant="secondary"
+                                      size="sm"
+                                      onClick={() => handleToggleLike(trial.id, trial.liked || false)}
+                                      disabled={loading}
+                                      className={`p-1 rounded transition-all duration-200 ${
+                                        trial.liked 
+                                          ? 'text-pink-400 hover:text-pink-300 hover:bg-pink-500/20' 
+                                          : 'text-slate-400 hover:text-pink-400 hover:bg-pink-500/20'
+                                      }`}
+                                      title={trial.liked ? 'Remove from favorites' : 'Add to favorites'}
+                                    >
+                                      <Heart className={`w-3 h-3 ${trial.liked ? 'fill-current' : ''}`} />
+                                    </Button>
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className={`text-xs px-2 py-1 rounded-full ${config.bgColor} ${config.color}`}>
+                                    {config.label}
+                                  </span>
+                                  <span className="text-xs text-slate-400">
+                                    {new Date(trial.end_date).toLocaleDateString()}
+                                  </span>
+                                </div>
+                                {/* Money saved display */}
+                                {(status === 'cancelled' || status === 'expired') && (
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs text-green-400 font-medium">
+                                      Saved: {formatCurrency(moneySaved)}
+                                    </span>
+                                    {trial.cost ? (
+                                      <span className="text-xs text-slate-500">
+                                        {formatCurrency(trial.cost)}/{trial.billing_frequency || 'month'}
+                                      </span>
+                                    ) : (
+                                      <span className="text-xs text-slate-500">
+                                        Estimated
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </motion.div>
+                            )
+                          })}
+                        </div>
+                      </motion.div>
+                    )
+                  }
+                  return null
+                })()}
+
+                {/* Coming Soon Features */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.6 }}
+                  className="border-t border-slate-700/50 pt-8"
+                >
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                      <span>🚀</span>
+                      Coming Soon
+                    </h2>
+                    <span className="text-slate-400 text-sm">Future Enhancements</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      { icon: '📧', title: 'Gmail Inbox Sync', description: 'Auto-detect trial emails' },
+                      { icon: '📅', title: 'Calendar Reminders', description: 'Smart notification system' },
+                      { icon: '🧠', title: 'Smart Suggestions', description: 'AI-powered recommendations' },
+                      { icon: '🤖', title: 'Auto-Cancel Assist', description: 'One-click trial cancellation' }
+                    ].map((feature, index) => (
+                      <motion.div
+                        key={feature.title}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.6 + index * 0.1, duration: 0.4 }}
+                        className="p-4 rounded-lg border border-slate-700/50 bg-slate-800/20 backdrop-blur-sm hover:bg-slate-800/40 transition-all duration-300 group"
+                      >
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="text-2xl">{feature.icon}</span>
+                          <div>
+                            <h3 className="font-semibold text-white text-sm">{feature.title}</h3>
+                            <span className="text-xs text-slate-400">{feature.description}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs px-2 py-1 rounded-full bg-fantasy-crimson/20 text-fantasy-crimson">
+                            Coming Soon
+                          </span>
+                          <span className="text-xs text-slate-500 group-hover:text-slate-400 transition-colors">
+                            🔒
+                          </span>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+              </main>
             </motion.div>
-          )}
-        </AnimatePresence>
+          </div>
 
-        {/* Trial Outcome Modal */}
-        {expiredTrial && expiredTrial.id && expiredTrial.service_name && expiredTrial.end_date && (
-          <TrialOutcomeModal
-            isOpen={showOutcomeModal}
-            onClose={() => {
-              setShowOutcomeModal(false)
-              setExpiredTrial(null)
-            }}
-            trial={expiredTrial}
-            onOutcomeSelect={handleOutcomeSelect}
-          />
-        )}
-      </div>
-    </FantasyBackgroundWrapper>
+          {/* Toast Notification */}
+          <AnimatePresence>
+            {showToast && (
+              <motion.div
+                initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 50, scale: 0.9 }}
+                className="fixed bottom-4 right-4 bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 shadow-lg z-50"
+              >
+                <p className="text-white text-sm">{toastMessage}</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Trial Outcome Modal */}
+          {expiredTrial && expiredTrial.id && expiredTrial.service_name && expiredTrial.end_date && (
+            <TrialOutcomeModal
+              isOpen={showOutcomeModal}
+              onClose={() => {
+                setShowOutcomeModal(false)
+                setExpiredTrial(null)
+              }}
+              trial={expiredTrial}
+              onOutcomeSelect={handleOutcomeSelect}
+            />
+          )}
+        </div>
+      </FantasyBackgroundWrapper>
+      
+      {/* Feedback Button */}
+      <button
+        onClick={() => setShowFeedbackModal(true)}
+        className="fixed bottom-4 right-4 z-50 bg-indigo-600 text-white px-4 py-2 rounded-full text-sm shadow hover:bg-indigo-700 transition dark:bg-indigo-500 dark:hover:bg-indigo-600"
+      >
+        💬 Feedback
+      </button>
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        userId={user.id}
+      />
+    </>
   )
 } 
