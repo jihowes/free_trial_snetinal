@@ -121,7 +121,7 @@ export default function LoginPage() {
   }
 
   return (
-    <FantasyBackgroundWrapper showEmbers={true} showEyeGlow={true} showFloatingEye={true}>
+    <FantasyBackgroundWrapper showEmbers={true} showEyeGlow={true}>
       <div className="min-h-screen flex">
         {/* Left Column - Branding */}
         <motion.div 
@@ -190,6 +190,14 @@ export default function LoginPage() {
               <h2 className="text-2xl font-bold text-white font-outfit">
                 Welcome back
               </h2>
+              <div className="mt-4">
+                <Link 
+                  href="/explore" 
+                  className="text-orange-400 hover:text-orange-300 text-sm underline"
+                >
+                  Explore Free Trials →
+                </Link>
+              </div>
             </motion.div>
 
             {/* Desktop Title */}
@@ -198,8 +206,16 @@ export default function LoginPage() {
                 Welcome back
               </h2>
               <p className="text-slate-300">
-                Enter your credentials to access your account
+                Sign in to your Sentinel account
               </p>
+              <div className="mt-4">
+                <Link 
+                  href="/explore" 
+                  className="text-orange-400 hover:text-orange-300 text-sm underline"
+                >
+                  Explore Free Trials →
+                </Link>
+              </div>
             </motion.div>
 
             {/* Login Form */}

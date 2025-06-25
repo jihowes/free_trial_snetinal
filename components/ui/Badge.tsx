@@ -27,7 +27,7 @@ export interface BadgeProps
 
 function Badge({ className, variant, ...props }: BadgeProps) {
   return (
-    <div className={cva({ className, variant })} {...props} />
+    <div className={badgeVariants({ variant, className })} {...props} />
   )
 }
 

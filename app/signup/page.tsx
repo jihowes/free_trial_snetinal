@@ -9,12 +9,14 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Logo } from '@/components/ui/Logo'
-import { Mail, Lock, AlertCircle, CheckCircle, Shield, Zap, Clock } from 'lucide-react'
+import { Mail, Lock, AlertCircle, CheckCircle, Shield, Zap, Clock, Eye, EyeOff, DollarSign, Bell, LayoutGrid } from 'lucide-react'
 import FantasyBackgroundWrapper from '@/components/FantasyBackgroundWrapper'
+import { easeOut } from 'framer-motion'
 
 export default function SignupPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -77,8 +79,8 @@ export default function SignupPage() {
       y: 0,
       transition: {
         duration: 0.5,
-        ease: "easeOut"
-      }
+        ease: easeOut,
+      },
     }
   }
 
@@ -89,13 +91,13 @@ export default function SignupPage() {
       x: 0,
       transition: {
         duration: 0.4,
-        ease: "easeOut"
-      }
+        ease: easeOut,
+      },
     }
   }
 
   return (
-    <FantasyBackgroundWrapper showEmbers={true} showEyeGlow={true} showFloatingEye={true}>
+    <FantasyBackgroundWrapper showEmbers={true} showEyeGlow={true}>
       <div className="min-h-screen flex">
         {/* Left Column - Branding */}
         <motion.div 
@@ -131,31 +133,31 @@ export default function SignupPage() {
               <div className="grid grid-cols-1 gap-4 text-left">
                 <motion.div variants={featureVariants} className="flex items-center space-x-3 text-slate-300">
                   <div className="w-10 h-10 bg-fantasy-crimson/20 rounded-lg flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-fantasy-crimson" />
+                    <DollarSign className="w-5 h-5 text-fantasy-crimson" />
                   </div>
                   <div>
-                    <p className="font-medium">Smart Protection</p>
-                    <p className="text-sm text-slate-400">Automated trial monitoring</p>
+                    <p className="font-medium">Save Money Automatically</p>
+                    <p className="text-sm text-slate-400">Avoid paying for subscriptions you forgot to cancel.</p>
                   </div>
                 </motion.div>
                 
                 <motion.div variants={featureVariants} className="flex items-center space-x-3 text-slate-300">
                   <div className="w-10 h-10 bg-fantasy-molten/20 rounded-lg flex items-center justify-center">
-                    <Zap className="w-5 h-5 text-fantasy-molten" />
+                    <Bell className="w-5 h-5 text-fantasy-molten" />
                   </div>
                   <div>
-                    <p className="font-medium">Instant Alerts</p>
-                    <p className="text-sm text-slate-400">Real-time notifications</p>
+                    <p className="font-medium">Get Reminded Before You Pay</p>
+                    <p className="text-sm text-slate-400">Smart alerts help you cancel on time — before it's too late.</p>
                   </div>
                 </motion.div>
                 
                 <motion.div variants={featureVariants} className="flex items-center space-x-3 text-slate-300">
                   <div className="w-10 h-10 bg-fantasy-gold/20 rounded-lg flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-fantasy-gold" />
+                    <LayoutGrid className="w-5 h-5 text-fantasy-gold" />
                   </div>
                   <div>
-                    <p className="font-medium">Time Management</p>
-                    <p className="text-sm text-slate-400">Never miss a deadline</p>
+                    <p className="font-medium">Track All Your Free Trials in One Place</p>
+                    <p className="text-sm text-slate-400">From Netflix to Notion, stay organized with a central dashboard.</p>
                   </div>
                 </motion.div>
               </div>
@@ -182,6 +184,14 @@ export default function SignupPage() {
               <h2 className="text-2xl font-bold text-white font-outfit">
                 Create your account
               </h2>
+              <div className="mt-4">
+                <Link 
+                  href="/explore" 
+                  className="text-orange-400 hover:text-orange-300 text-sm underline"
+                >
+                  Explore Free Trials →
+                </Link>
+              </div>
             </motion.div>
 
             {/* Desktop Title */}
@@ -192,6 +202,14 @@ export default function SignupPage() {
               <p className="text-slate-300">
                 Enter your details to start protecting your trials
               </p>
+              <div className="mt-4">
+                <Link 
+                  href="/explore" 
+                  className="text-orange-400 hover:text-orange-300 text-sm underline"
+                >
+                  Explore Free Trials →
+                </Link>
+              </div>
             </motion.div>
 
             {/* Signup Form */}
@@ -218,7 +236,6 @@ export default function SignupPage() {
                           }
                         }}
                         required
-                        icon={<Mail className="w-4 h-4" />}
                       />
                     </motion.div>
 
@@ -226,16 +243,23 @@ export default function SignupPage() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4 }}
+                      className="relative"
                     >
                       <Input
                         label="Password"
-                        type="password"
+                        type={showPassword ? "text" : "password"}
                         placeholder="Create a password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        icon={<Lock className="w-4 h-4" />}
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-11 text-slate-400 hover:text-white transition-colors z-10"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </motion.div>
                     
                     {error && (

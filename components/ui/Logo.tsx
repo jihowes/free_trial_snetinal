@@ -40,7 +40,7 @@ export function Logo({ size = 'md', containerSize, className = '' }: LogoProps) 
   const logoClass = sizeClasses[size]
 
   return (
-    <div className={`flex flex-col items-center justify-center gap-4 ${className}`} suppressHydrationWarning>
+    <div className={`flex items-center justify-center gap-4 ${className}`} suppressHydrationWarning>
       {/* Animated Eye of Sentinel Logo */}
       <div className={`${containerClass} relative flex items-center justify-center ${mounted ? 'sentinel-logo' : ''}`}>
         <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className={`${logoClass}`}>
@@ -62,7 +62,7 @@ export function Logo({ size = 'md', containerSize, className = '' }: LogoProps) 
       </div>
 
       {/* Premium Typography */}
-      <div className="flex flex-col items-center justify-center text-center">
+      <div className="flex flex-col items-start justify-center text-left">
         <h1 className="text-4xl font-black tracking-tight text-gray-200">
           FREE TRIAL <span className="text-orange-500">SENTINEL</span>
         </h1>

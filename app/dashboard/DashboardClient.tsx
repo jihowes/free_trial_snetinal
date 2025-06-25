@@ -350,7 +350,7 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
 
   return (
     <>
-      <FantasyBackgroundWrapper showEmbers={true} showEyeGlow={true} showFloatingEye={true}>
+      <FantasyBackgroundWrapper showEmbers={true} showEyeGlow={true}>
         <div className="min-h-screen bg-gradient-to-br from-fantasy-obsidian via-fantasy-charcoal to-fantasy-shadow">
           <div className="w-full max-w-[1400px] mx-auto p-4 md:p-8">
             <motion.div
@@ -369,6 +369,12 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
                 </div>
                 <div className="flex items-center gap-3">
                   <CurrencySelector />
+                  <Button 
+                    onClick={() => router.push('/explore')}
+                    className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-orange-500/25"
+                  >
+                    🔍 Explore Trials
+                  </Button>
                   <Button 
                     onClick={() => router.push('/dashboard/add-trial')}
                     className="bg-gradient-to-r from-fantasy-crimson to-fantasy-molten hover:from-fantasy-molten hover:to-fantasy-crimson text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-fantasy-crimson/25"

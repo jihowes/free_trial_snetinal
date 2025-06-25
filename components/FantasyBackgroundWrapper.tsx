@@ -7,7 +7,6 @@ interface FantasyBackgroundWrapperProps {
   children: React.ReactNode
   showEmbers?: boolean
   showEyeGlow?: boolean
-  showFloatingEye?: boolean
   enableSound?: boolean
 }
 
@@ -15,10 +14,8 @@ export default function FantasyBackgroundWrapper({
   children,
   showEmbers = true,
   showEyeGlow = true,
-  showFloatingEye = true,
   enableSound = false
 }: FantasyBackgroundWrapperProps) {
-  const [isHoveringEye, setIsHoveringEye] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
   const [mounted, setMounted] = useState(false)
   const prefersReducedMotion = useReducedMotion()
@@ -104,31 +101,6 @@ export default function FantasyBackgroundWrapper({
     }
   }
 
-  // Floating eye animation
-  const floatingEyeVariants = {
-    float: {
-      y: [0, -10, 0],
-      rotate: [0, 5, -5, 0],
-      transition: {
-        duration: 6,
-        repeat: Infinity,
-        ease: "easeInOut" as const
-      }
-    },
-    flare: {
-      scale: [1, 1.2, 1],
-      filter: [
-        "brightness(1) drop-shadow(0 0 10px #d93e30)",
-        "brightness(1.5) drop-shadow(0 0 20px #d93e30) drop-shadow(0 0 30px #e25822)",
-        "brightness(1) drop-shadow(0 0 10px #d93e30)"
-      ],
-      transition: {
-        duration: 0.3,
-        ease: "easeInOut" as const
-      }
-    }
-  }
-
   return (
     <div className="relative min-h-screen">
       {/* Base fantasy gradient background */}
@@ -180,24 +152,6 @@ export default function FantasyBackgroundWrapper({
             />
           ))}
         </div>
-      )}
-
-      {/* Floating eye orb (easter egg) */}
-      {showFloatingEye && mounted && (
-        <motion.div
-          className="fixed top-8 right-8 w-12 h-12 pointer-events-none z-10"
-          variants={floatingEyeVariants}
-          animate={isHoveringEye ? "flare" : "float"}
-          onHoverStart={() => setIsHoveringEye(true)}
-          onHoverEnd={() => setIsHoveringEye(false)}
-        >
-          <svg viewBox="0 0 24 24" fill="none" className="w-full h-full">
-            <circle cx="12" cy="12" r="10" fill="rgba(217, 62, 48, 0.8)" />
-            <circle cx="12" cy="12" r="6" fill="rgba(226, 88, 34, 0.9)" />
-            <circle cx="12" cy="12" r="3" fill="rgba(244, 208, 63, 1)" />
-            <circle cx="11" cy="11" r="1" fill="black" />
-          </svg>
-        </motion.div>
       )}
 
       {/* Sound toggle (if enabled) */}
