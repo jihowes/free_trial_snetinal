@@ -12,13 +12,27 @@ function calculateDaysLeft(endDate: string): number {
   const now = new Date()
   const end = new Date(endDate)
   
-  // Get the date parts in local timezone (strip time)
-  const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const endDateOnly = new Date(end.getFullYear(), end.getMonth(), end.getDate())
+  // Use the exact same logic as the local app
+  // Strip time components and calculate based on date only
+  const nowYear = now.getFullYear()
+  const nowMonth = now.getMonth()
+  const nowDay = now.getDate()
+  
+  const endYear = end.getFullYear()
+  const endMonth = end.getMonth()
+  const endDay = end.getDate()
+  
+  // Create date objects with time set to midnight
+  const nowDate = new Date(nowYear, nowMonth, nowDay)
+  const endDateOnly = new Date(endYear, endMonth, endDay)
   
   // Calculate difference in days
   const timeDiff = endDateOnly.getTime() - nowDate.getTime()
   const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24))
+  
+  // Debug logging
+  console.log(`calculateDaysLeft debug: now=${now.toISOString()}, end=${end.toISOString()}, nowDate=${nowDate.toISOString()}, endDateOnly=${endDateOnly.toISOString()}, timeDiff=${timeDiff}, daysDiff=${daysDiff}`)
+  console.log(`Date components: now(${nowYear}-${nowMonth}-${nowDay}) vs end(${endYear}-${endMonth}-${endDay})`)
   
   return daysDiff
 }
@@ -117,7 +131,6 @@ serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
@@ -133,122 +146,148 @@ serve(async (req) => {
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     
-    // Calculate target dates for 1 and 7 days from now
+    // Calculate target date for 1 day from now
     const oneDayFromNow = new Date(today.getTime() + 24 * 60 * 60 * 1000)
-    const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
     
-    // Set to end of day (23:59:59.999) for both dates
+    // Set to end of day (23:59:59.999)
     const oneDayEndOfDay = new Date(oneDayFromNow)
     oneDayEndOfDay.setHours(23, 59, 59, 999)
-    
-    const sevenDaysEndOfDay = new Date(sevenDaysFromNow)
-    sevenDaysEndOfDay.setHours(23, 59, 59, 999)
 
-    console.log(`Checking for trials expiring on: ${oneDayEndOfDay.toISOString()} and ${sevenDaysEndOfDay.toISOString()}`)
+    console.log(`Checking for trials expiring on: ${oneDayEndOfDay.toISOString()}`)
 
-    // Query for trials that expire in 1 or 7 days and haven't been notified in the last 24 hours
-    const { data: trials, error } = await supabase
+    // Use database-calculated days_until_expiry field
+    const { data: allTrials, error } = await supabase
       .from('trials')
-      .select(`
-        id,
-        service_name,
-        end_date,
-        last_notified,
-        user_id,
-        users:user_id (
-          email
-        )
-      `)
-      .or(`end_date.eq.${oneDayEndOfDay.toISOString()},end_date.eq.${sevenDaysEndOfDay.toISOString()}`)
+      .select('id, service_name, end_date, last_notified, user_id, days_until_expiry')
       .eq('outcome', 'active')
-      .or('last_notified.is.null,last_notified.lt.' + new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString())
+      // Temporarily remove last_notified filter for testing
+      // .or('last_notified.is.null,last_notified.lt.' + new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString())
 
     if (error) {
       console.error('Database query error:', error)
       throw error
     }
 
-    console.log(`Found ${trials?.length || 0} trials to process`)
+    console.log(`Found ${allTrials?.length || 0} total active trials`)
 
     const results = []
     let emailsSent = 0
     let errors = 0
 
-    for (const trial of trials || []) {
+    // Filter trials that expire in 1 day (or today) using database-calculated field
+    const targetTrials = allTrials?.filter(trial => {
+      const daysUntilExpiry = trial.days_until_expiry
+      const shouldNotify = (daysUntilExpiry === 1 || daysUntilExpiry === 0)
+      
+      // Debug logging
+      console.log(`Trial ${trial.service_name}: days_until_expiry=${daysUntilExpiry}, shouldNotify=${shouldNotify}, end_date=${trial.end_date}`)
+      
+      return shouldNotify
+    }) || []
+
+    console.log(`Found ${targetTrials.length} trials to process for email reminders`)
+
+    // Add detailed debug info for each trial
+    const trialDebugInfo = allTrials?.map(trial => ({
+      service_name: trial.service_name,
+      end_date: trial.end_date,
+      days_until_expiry: trial.days_until_expiry,
+      should_notify: (trial.days_until_expiry === 1 || trial.days_until_expiry === 0),
+      last_notified: trial.last_notified
+    })) || []
+
+    for (const trial of targetTrials) {
       try {
-        const daysUntilExpiry = calculateDaysLeft(trial.end_date)
+        // Use the database-calculated days_until_expiry
+        const daysUntilExpiry = trial.days_until_expiry
         
-        // Only send emails for trials expiring in 1 or 7 days
-        if (daysUntilExpiry === 1 || daysUntilExpiry === 7) {
-          const userEmail = trial.users?.email
-          
-          if (!userEmail) {
-            console.warn(`No email found for trial ${trial.id}`)
-            results.push({
-              trial_id: trial.id,
-              service_name: trial.service_name,
-              user_email: null,
-              days_until_expiry: daysUntilExpiry,
-              email_sent: false,
-              error: 'No user email found'
-            })
-            errors++
-            continue
-          }
-
-          // Generate email content
-          const emailHtml = generateEmailHTML(trial.service_name, daysUntilExpiry, trial.end_date)
-          const subject = `🚨 ${trial.service_name} trial expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'}`
-
-          // Send email via Resend
-          const { data: emailData, error: emailError } = await resend.emails.send({
-            from: 'noreply@freetrialsentinel.com',
-            to: userEmail,
-            subject: subject,
-            html: emailHtml,
+        // Get user email separately using admin API
+        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(trial.user_id)
+        
+        if (userError || !userData.user) {
+          console.warn(`No user found for trial ${trial.id}:`, userError)
+          results.push({
+            trial_id: trial.id,
+            service_name: trial.service_name,
+            user_email: null,
+            days_until_expiry: daysUntilExpiry,
+            email_sent: false,
+            error: 'No user found'
           })
+          errors++
+          continue
+        }
 
-          if (emailError) {
-            console.error(`Failed to send email for trial ${trial.id}:`, emailError)
-            results.push({
-              trial_id: trial.id,
-              service_name: trial.service_name,
-              user_email: userEmail,
-              days_until_expiry: daysUntilExpiry,
-              email_sent: false,
-              error: emailError.message
-            })
-            errors++
-          } else {
-            // Update last_notified timestamp
-            const { error: updateError } = await supabase
-              .from('trials')
-              .update({ last_notified: now.toISOString() })
-              .eq('id', trial.id)
+        const userEmail = userData.user.email
+        
+        if (!userEmail) {
+          console.warn(`No email found for trial ${trial.id}`)
+          results.push({
+            trial_id: trial.id,
+            service_name: trial.service_name,
+            user_email: null,
+            days_until_expiry: daysUntilExpiry,
+            email_sent: false,
+            error: 'No user email found'
+          })
+          errors++
+          continue
+        }
 
-            if (updateError) {
-              console.error(`Failed to update last_notified for trial ${trial.id}:`, updateError)
-            }
+        // Generate email content
+        const emailHtml = generateEmailHTML(trial.service_name, daysUntilExpiry, trial.end_date)
+        const subject = daysUntilExpiry === 0 
+          ? `🚨 ${trial.service_name} trial expires TODAY!`
+          : `🚨 ${trial.service_name} trial expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'}`
 
-            console.log(`Email sent successfully for trial ${trial.id} to ${userEmail}`)
-            results.push({
-              trial_id: trial.id,
-              service_name: trial.service_name,
-              user_email: userEmail,
-              days_until_expiry: daysUntilExpiry,
-              email_sent: true,
-              email_id: emailData?.id
-            })
-            emailsSent++
+        // Send email via Resend
+        const { data: emailData, error: emailError } = await resend.emails.send({
+          from: 'noreply@freetrialsentinel.com',
+          to: userEmail,
+          subject: subject,
+          html: emailHtml,
+        })
+
+        if (emailError) {
+          console.error(`Failed to send email for trial ${trial.id}:`, emailError)
+          results.push({
+            trial_id: trial.id,
+            service_name: trial.service_name,
+            user_email: userEmail,
+            days_until_expiry: daysUntilExpiry,
+            email_sent: false,
+            error: emailError.message
+          })
+          errors++
+        } else {
+          // Update last_notified timestamp
+          const { error: updateError } = await supabase
+            .from('trials')
+            .update({ last_notified: now.toISOString() })
+            .eq('id', trial.id)
+
+          if (updateError) {
+            console.error(`Failed to update last_notified for trial ${trial.id}:`, updateError)
           }
+
+          console.log(`Email sent successfully for trial ${trial.id} to ${userEmail}`)
+          results.push({
+            trial_id: trial.id,
+            service_name: trial.service_name,
+            user_email: userEmail,
+            days_until_expiry: daysUntilExpiry,
+            email_sent: true,
+            email_id: emailData?.id
+          })
+          emailsSent++
         }
       } catch (trialError) {
         console.error(`Error processing trial ${trial.id}:`, trialError)
         results.push({
           trial_id: trial.id,
           service_name: trial.service_name,
-          user_email: trial.users?.email,
-          days_until_expiry: calculateDaysLeft(trial.end_date),
+          user_email: null,
+          days_until_expiry: trial.days_until_expiry,
           email_sent: false,
           error: trialError.message
         })
@@ -262,7 +301,14 @@ serve(async (req) => {
       emails_sent: emailsSent,
       errors: errors,
       timestamp: now.toISOString(),
-      results
+      debug: {
+        total_trials: allTrials?.length || 0,
+        target_trials_count: targetTrials.length,
+        current_date: now.toISOString(),
+        one_day_from_now: oneDayEndOfDay.toISOString()
+      },
+      results,
+      trial_debug_info: trialDebugInfo
     }
 
     console.log('Function completed:', response)
@@ -288,4 +334,4 @@ serve(async (req) => {
       }
     )
   }
-}) 
+})
