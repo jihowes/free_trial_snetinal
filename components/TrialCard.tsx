@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { MoreHorizontal, Calendar, CheckCircle, XCircle } from 'lucide-react'
+import { MoreHorizontal, Calendar, CheckCircle, XCircle, Edit } from 'lucide-react'
 import { Button } from './ui/Button'
 import { Card } from './ui/Card'
 import { CountdownBadge } from './CountdownBadge'
@@ -18,15 +18,27 @@ interface TrialCardProps {
   billing_frequency?: 'weekly' | 'fortnightly' | 'monthly' | 'yearly'
   onDelete: (id: string) => void
   onAction: (id: string, action: 'kept' | 'cancelled') => void
+  onEdit: (id: string, updates: { service_name?: string; end_date?: string; cost?: number | null; billing_frequency?: string }) => void
   index: number
 }
 
-export function TrialCard({ id, service_name, end_date, cost, billing_frequency, onDelete, onAction, index }: TrialCardProps) {
+export function TrialCard({ id, service_name, end_date, cost, billing_frequency, onDelete, onAction, onEdit, index }: TrialCardProps) {
   const [mounted, setMounted] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const dropdownButtonRef = useRef<HTMLDivElement>(null)
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null)
   const { formatCurrency } = useCurrency()
+
+  // Edit form state
+  const [editForm, setEditForm] = useState({
+    service_name: service_name,
+    end_date: new Date(end_date).toISOString().split('T')[0], // Format for date input
+    cost: cost?.toString() || '',
+    billing_frequency: billing_frequency || 'monthly'
+  })
+  const [editErrors, setEditErrors] = useState<{[key: string]: string}>({})
+  const [editLoading, setEditLoading] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -61,7 +73,7 @@ export function TrialCard({ id, service_name, end_date, cost, billing_frequency,
     if (showDropdown && dropdownButtonRef.current) {
       const rect = dropdownButtonRef.current.getBoundingClientRect()
       const dropdownWidth = 192 // w-48 = 12rem = 192px
-      const dropdownHeight = 80 // Approximate height
+      const dropdownHeight = 120 // Increased height for 3 menu items
       
       // Check if dropdown would go off the right edge
       let left = rect.left
@@ -92,6 +104,69 @@ export function TrialCard({ id, service_name, end_date, cost, billing_frequency,
 
   // Pulse if expiring in next 3 days or expired in last 7 days
   const shouldPulse = (daysLeft >= 0 && daysLeft <= 2) || (daysLeft < 0 && daysLeft >= -7)
+
+  // Edit form validation
+  const validateEditForm = () => {
+    const errors: {[key: string]: string} = {}
+    
+    if (!editForm.service_name.trim()) {
+      errors.service_name = 'Service name is required'
+    }
+    
+    if (!editForm.end_date) {
+      errors.end_date = 'End date is required'
+    } else {
+      const selectedDate = new Date(editForm.end_date)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      if (selectedDate < today) {
+        errors.end_date = 'End date cannot be in the past'
+      }
+    }
+    
+    if (editForm.cost && parseFloat(editForm.cost) < 0) {
+      errors.cost = 'Cost cannot be negative'
+    }
+    
+    setEditErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  // Handle edit form submission
+  const handleEditSubmit = async () => {
+    if (!validateEditForm()) return
+    
+    setEditLoading(true)
+    try {
+      const updates = {
+        service_name: editForm.service_name.trim(),
+        end_date: new Date(editForm.end_date).toISOString(),
+        cost: editForm.cost ? parseFloat(editForm.cost) : null,
+        billing_frequency: editForm.billing_frequency
+      }
+      
+      await onEdit(id, updates)
+      setShowEditModal(false)
+      setShowDropdown(false)
+    } catch (error) {
+      console.error('Error updating trial:', error)
+    } finally {
+      setEditLoading(false)
+    }
+  }
+
+  // Reset edit form when modal opens
+  const handleEditClick = () => {
+    setEditForm({
+      service_name: service_name,
+      end_date: new Date(end_date).toISOString().split('T')[0],
+      cost: cost?.toString() || '',
+      billing_frequency: billing_frequency || 'monthly'
+    })
+    setEditErrors({})
+    setShowEditModal(true)
+    setShowDropdown(false)
+  }
 
   if (!mounted) {
     return (
@@ -209,6 +284,13 @@ export function TrialCard({ id, service_name, end_date, cost, billing_frequency,
                           >
                             <div className="py-1">
                               <button
+                                onClick={handleEditClick}
+                                className="w-full flex items-center px-4 py-2 text-sm text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 transition-colors"
+                              >
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit Trial
+                              </button>
+                              <button
                                 onClick={() => {
                                   onAction(id, 'kept')
                                   setShowDropdown(false)
@@ -275,6 +357,134 @@ export function TrialCard({ id, service_name, end_date, cost, billing_frequency,
           </div>
         </div>
       </Card>
+
+      {/* Edit Modal */}
+      {showEditModal && createPortal(
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100001] flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-slate-900 border border-slate-600 rounded-xl shadow-2xl w-full max-w-md"
+          >
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-white mb-4">Edit Trial</h3>
+              
+              <div className="space-y-4">
+                {/* Service Name */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Service Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.service_name}
+                    onChange={(e) => {
+                      setEditForm(prev => ({ ...prev, service_name: e.target.value }))
+                      if (editErrors.service_name) {
+                        setEditErrors(prev => ({ ...prev, service_name: '' }))
+                      }
+                    }}
+                    className={`w-full px-3 py-2 bg-slate-800 border rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      editErrors.service_name ? 'border-red-500' : 'border-slate-600'
+                    }`}
+                    placeholder="Enter service name"
+                  />
+                  {editErrors.service_name && (
+                    <p className="text-red-400 text-sm mt-1">{editErrors.service_name}</p>
+                  )}
+                </div>
+
+                {/* End Date */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    value={editForm.end_date}
+                    onChange={(e) => {
+                      setEditForm(prev => ({ ...prev, end_date: e.target.value }))
+                      if (editErrors.end_date) {
+                        setEditErrors(prev => ({ ...prev, end_date: '' }))
+                      }
+                    }}
+                    className={`w-full px-3 py-2 bg-slate-800 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      editErrors.end_date ? 'border-red-500' : 'border-slate-600'
+                    }`}
+                  />
+                  {editErrors.end_date && (
+                    <p className="text-red-400 text-sm mt-1">{editErrors.end_date}</p>
+                  )}
+                </div>
+
+                {/* Cost */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Monthly Cost (optional)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={editForm.cost}
+                    onChange={(e) => {
+                      setEditForm(prev => ({ ...prev, cost: e.target.value }))
+                      if (editErrors.cost) {
+                        setEditErrors(prev => ({ ...prev, cost: '' }))
+                      }
+                    }}
+                    className={`w-full px-3 py-2 bg-slate-800 border rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      editErrors.cost ? 'border-red-500' : 'border-slate-600'
+                    }`}
+                    placeholder="0.00"
+                  />
+                  {editErrors.cost && (
+                    <p className="text-red-400 text-sm mt-1">{editErrors.cost}</p>
+                  )}
+                </div>
+
+                {/* Billing Frequency */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Billing Frequency
+                  </label>
+                  <select
+                    value={editForm.billing_frequency}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, billing_frequency: e.target.value }))}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="monthly">Monthly</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="fortnightly">Fortnightly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 mt-6">
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowEditModal(false)}
+                  className="flex-1"
+                  disabled={editLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleEditSubmit}
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                  disabled={editLoading}
+                >
+                  {editLoading ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        </div>,
+        document.body
+      )}
     </motion.div>
   )
 } 

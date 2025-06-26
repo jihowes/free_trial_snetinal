@@ -204,6 +204,43 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
     }
   }
 
+  const handleEditTrial = async (trialId: string, updates: { service_name?: string; end_date?: string; cost?: number | null; billing_frequency?: string }) => {
+    setLoading(true)
+    try {
+      // Set end date to end of day if provided
+      let endDateWithTime = updates.end_date
+      if (updates.end_date) {
+        const endOfDay = new Date(updates.end_date)
+        endOfDay.setHours(23, 59, 59, 999)
+        endDateWithTime = endOfDay.toISOString()
+      }
+
+      const updateData: any = {}
+      if (updates.service_name !== undefined) updateData.service_name = updates.service_name
+      if (endDateWithTime !== undefined) updateData.end_date = endDateWithTime
+      if (updates.cost !== undefined) updateData.cost = updates.cost
+      if (updates.billing_frequency !== undefined) updateData.billing_frequency = updates.billing_frequency
+
+      await supabase
+        .from('trials')
+        .update(updateData)
+        .eq('id', trialId)
+      
+      showToastMessage('Trial updated successfully!')
+      
+      // Refresh after a short delay
+      setTimeout(() => {
+        router.refresh()
+      }, 500)
+    } catch (error) {
+      console.error('Error updating trial:', error)
+      showToastMessage('Failed to update trial. Please try again.')
+      throw error // Re-throw so the modal can handle the error
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const showToastMessage = (message: string) => {
     setToastMessage(message)
     setShowToast(true)
@@ -489,6 +526,7 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
                             billing_frequency={trial.billing_frequency}
                             onDelete={handleDeleteTrial}
                             onAction={handleActionTrial}
+                            onEdit={handleEditTrial}
                             index={index}
                           />
                         ))}
