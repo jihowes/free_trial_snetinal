@@ -23,7 +23,7 @@ export function CurrencySelector({ className = '' }: CurrencySelectorProps) {
       <div className={`relative ${className}`}>
         <Button
           variant="secondary"
-          className="flex items-center gap-2 bg-slate-800/50 border border-slate-700/50 hover:bg-slate-700/50 text-slate-300 min-w-[80px]"
+          className="flex items-center gap-2 bg-slate-800/50 border border-slate-700/50 hover:bg-slate-700/50 text-slate-400 min-w-[80px]"
         >
           <span className="text-sm font-medium">$</span>
           <ChevronDown className="w-3 h-3" />
@@ -37,7 +37,7 @@ export function CurrencySelector({ className = '' }: CurrencySelectorProps) {
       <Button
         variant="secondary"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 bg-slate-800/50 border border-slate-700/50 hover:bg-slate-700/50 text-slate-300 min-w-[80px]"
+        className="flex items-center gap-2 bg-slate-800/50 border border-slate-700/50 hover:bg-slate-700/50 text-slate-400 min-w-[80px]"
       >
         <span className="text-sm font-medium">{currency.symbol}</span>
         <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
