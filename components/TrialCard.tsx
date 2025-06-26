@@ -40,9 +40,19 @@ export function TrialCard({ id, service_name, end_date, cost, billing_frequency,
       }
     }
 
+    const handleScroll = () => {
+      if (showDropdown) {
+        setShowDropdown(false)
+      }
+    }
+
     if (showDropdown) {
       document.addEventListener('click', handleClickOutside)
-      return () => document.removeEventListener('click', handleClickOutside)
+      window.addEventListener('scroll', handleScroll, { passive: true })
+      return () => {
+        document.removeEventListener('click', handleClickOutside)
+        window.removeEventListener('scroll', handleScroll)
+      }
     }
   }, [showDropdown])
 
@@ -50,9 +60,25 @@ export function TrialCard({ id, service_name, end_date, cost, billing_frequency,
   useEffect(() => {
     if (showDropdown && dropdownButtonRef.current) {
       const rect = dropdownButtonRef.current.getBoundingClientRect()
+      const dropdownWidth = 192 // w-48 = 12rem = 192px
+      const dropdownHeight = 80 // Approximate height
+      
+      // Check if dropdown would go off the right edge
+      let left = rect.left
+      if (left + dropdownWidth > window.innerWidth) {
+        left = window.innerWidth - dropdownWidth - 8
+      }
+      
+      // Check if dropdown would go off the bottom edge
+      let top = rect.bottom + 8
+      if (top + dropdownHeight > window.innerHeight) {
+        // Position above the button instead
+        top = rect.top - dropdownHeight - 8
+      }
+      
       setDropdownPosition({
-        top: rect.bottom + window.scrollY + 8, // 8px margin
-        left: rect.left + window.scrollX,
+        top: Math.max(8, top), // Ensure it doesn't go off the top
+        left: Math.max(8, left), // Ensure it doesn't go off the left
       })
     }
   }, [showDropdown])
