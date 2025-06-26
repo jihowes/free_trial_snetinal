@@ -6,6 +6,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Helper function to calculate days left consistently with the main app
+function calculateDaysLeft(endDate: string): number {
+  const now = new Date()
+  const end = new Date(endDate)
+  
+  // Get the date parts in local timezone (strip time)
+  const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const endDateOnly = new Date(end.getFullYear(), end.getMonth(), end.getDate())
+  
+  // Calculate difference in days
+  const timeDiff = endDateOnly.getTime() - nowDate.getTime()
+  const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24))
+  
+  return daysDiff
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -50,8 +66,7 @@ serve(async (req) => {
     const results = []
 
     for (const trial of trials || []) {
-      const endDate = new Date(trial.end_date)
-      const daysUntilExpiry = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      const daysUntilExpiry = calculateDaysLeft(trial.end_date)
       
       // Only send emails for trials expiring in 1 or 7 days
       if (daysUntilExpiry === 1 || daysUntilExpiry === 7) {
@@ -66,7 +81,7 @@ serve(async (req) => {
               <h2>Trial Reminder</h2>
               <p>Your <strong>${trial.service_name}</strong> trial ends in <strong>${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'}</strong>.</p>
               <p>Don't forget to cancel if you don't want to be charged!</p>
-              <p>End date: ${endDate.toLocaleDateString()}</p>
+              <p>End date: ${new Date(trial.end_date).toLocaleDateString()}</p>
             `,
           })
 

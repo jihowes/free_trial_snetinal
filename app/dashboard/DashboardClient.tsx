@@ -16,6 +16,7 @@ import { TrialOutcomeModal } from '@/components/TrialOutcomeModal'
 import { FeedbackModal } from '@/components/FeedbackModal'
 import { CurrencySelector } from '@/components/CurrencySelector'
 import { useCurrency, CurrencyProvider } from '@/components/CurrencyContext'
+import { calculateDaysLeft } from '@/lib/dateUtils'
 
 interface Trial {
   id: string
@@ -267,8 +268,7 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
       
       // Status filter
       let matchesFilter = true
-      const now = new Date()
-      const daysLeft = Math.ceil((new Date(trial.end_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      const daysLeft = calculateDaysLeft(trial.end_date)
       
       switch (filterBy) {
         case 'expiring':
@@ -284,9 +284,8 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
     })
     .sort((a, b) => {
       // Always sort by days to expiry (soonest first)
-      const now = new Date()
-      const daysLeftA = Math.ceil((new Date(a.end_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-      const daysLeftB = Math.ceil((new Date(b.end_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      const daysLeftA = calculateDaysLeft(a.end_date)
+      const daysLeftB = calculateDaysLeft(b.end_date)
       return daysLeftA - daysLeftB
     })
 
@@ -296,9 +295,7 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
       new Date(a.end_date).getTime() - new Date(b.end_date).getTime()
     )
     const next = sorted[0]
-    const daysLeft = Math.ceil(
-      (new Date(next.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-    )
+    const daysLeft = calculateDaysLeft(next.end_date)
     return { service_name: next.service_name, daysLeft }
   })() : undefined
 

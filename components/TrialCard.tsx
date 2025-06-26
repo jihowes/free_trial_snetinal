@@ -8,6 +8,7 @@ import { CountdownBadge } from './CountdownBadge'
 import { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useCurrency } from './CurrencyContext'
+import { calculateDaysLeft } from '@/lib/dateUtils'
 
 interface TrialCardProps {
   id: string
@@ -57,8 +58,7 @@ export function TrialCard({ id, service_name, end_date, cost, billing_frequency,
   }, [showDropdown])
 
   const endDate = new Date(end_date)
-  const now = new Date()
-  const daysLeft = Math.floor((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  const daysLeft = calculateDaysLeft(end_date)
   
   const isUrgent = daysLeft <= 1
   const isWarning = daysLeft <= 7 && daysLeft > 1
