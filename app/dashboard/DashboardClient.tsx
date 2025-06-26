@@ -402,7 +402,15 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CurrencySelector />
+                  <Button 
+                    variant="secondary"
+                    onClick={handleManualRefresh}
+                    disabled={refreshing}
+                    className="flex items-center gap-2 bg-slate-800/50 border border-slate-700/50 hover:bg-slate-700/50 text-slate-300"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                    {refreshing ? 'Refreshing...' : 'Refresh'}
+                  </Button>
                   <Button 
                     onClick={() => router.push('/explore')}
                     className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-orange-500/25"
@@ -416,21 +424,13 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
                     <Plus className="h-4 w-4 mr-2" />
                     Add New Trial
                   </Button>
-                  <Button 
-                    variant="secondary"
-                    onClick={handleManualRefresh}
-                    disabled={refreshing}
-                    className="text-slate-400 hover:text-white hover:bg-slate-700/50"
-                  >
-                    <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                    {refreshing ? 'Refreshing...' : 'Refresh'}
-                  </Button>
+                  <CurrencySelector />
                   <Button 
                     variant="secondary" 
                     onClick={handleLogout}
-                    className="text-slate-400 hover:text-white hover:bg-slate-700/50"
+                    className="flex items-center gap-2 bg-slate-800/50 border border-slate-700/50 hover:bg-slate-700/50 text-slate-300"
                   >
-                    <LogOut className="h-4 w-4 mr-2" />
+                    <LogOut className="h-4 w-4" />
                     Logout
                   </Button>
                 </div>

@@ -1,0 +1,9 @@
+{
+  "name": "sendTrialReminders",
+  "version": "1.0.0",
+  "description": "Supabase Edge Function to send trial reminder emails",
+  "main": "index.ts",
+  "dependencies": {
+    "resend": "^2.0.0"
+  }
+} 
