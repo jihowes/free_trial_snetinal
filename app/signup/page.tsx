@@ -18,6 +18,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [welcomeEmailLoading, setWelcomeEmailLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [emailExists, setEmailExists] = useState(false)
@@ -33,7 +34,7 @@ export default function SignupPage() {
 
     try {
       // Proceed directly with signup - let Supabase handle email existence
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -44,7 +45,37 @@ export default function SignupPage() {
       if (error) {
         setError(error.message)
       } else {
-        setMessage('Check your email for the confirmation link!')
+        // Send welcome email if signup was successful
+        if (data.user) {
+          setWelcomeEmailLoading(true)
+          try {
+            const welcomeEmailResponse = await fetch('/api/send-welcome-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                user_id: data.user.id,
+                email: data.user.email,
+                user_metadata: data.user.user_metadata
+              })
+            })
+
+            if (welcomeEmailResponse.ok) {
+              setMessage('Check your email for the confirmation link! We\'ve also sent you a welcome email to get you started.')
+            } else {
+              // Welcome email failed, but signup was successful
+              setMessage('Check your email for the confirmation link!')
+              console.log('Welcome email failed to send, but signup was successful')
+            }
+          } catch (welcomeEmailError) {
+            // Welcome email failed, but signup was successful
+            setMessage('Check your email for the confirmation link!')
+            console.log('Welcome email failed to send:', welcomeEmailError)
+          } finally {
+            setWelcomeEmailLoading(false)
+          }
+        } else {
+          setMessage('Check your email for the confirmation link!')
+        }
       }
     } catch (error) {
       setError('An unexpected error occurred')
@@ -330,14 +361,26 @@ export default function SignupPage() {
                       <Button 
                         type="submit" 
                         className="w-full bg-gradient-to-r from-fantasy-crimson to-fantasy-molten hover:from-fantasy-molten hover:to-fantasy-crimson text-white font-semibold py-3 text-base transition-all duration-300 shadow-lg hover:shadow-fantasy-crimson/25" 
-                        disabled={loading}
+                        disabled={loading || welcomeEmailLoading}
                       >
                         {loading ? (
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                            className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-                          />
+                          <div className="flex items-center space-x-2">
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                              className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                            />
+                            <span>Creating account...</span>
+                          </div>
+                        ) : welcomeEmailLoading ? (
+                          <div className="flex items-center space-x-2">
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                              className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                            />
+                            <span>Sending welcome email...</span>
+                          </div>
                         ) : (
                           'Create account'
                         )}
