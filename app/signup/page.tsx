@@ -47,8 +47,10 @@ export default function SignupPage() {
       } else {
         // Send welcome email if signup was successful
         if (data.user) {
+          console.log('User created successfully, calling welcome email API...')
           setWelcomeEmailLoading(true)
           try {
+            console.log('Sending welcome email to:', data.user.email)
             const welcomeEmailResponse = await fetch('/api/send-welcome-email', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -59,21 +61,29 @@ export default function SignupPage() {
               })
             })
 
+            console.log('Welcome email response status:', welcomeEmailResponse.status)
+            
             if (welcomeEmailResponse.ok) {
+              const responseData = await welcomeEmailResponse.json()
+              console.log('Welcome email response:', responseData)
               setMessage('Check your email for the confirmation link! We\'ve also sent you a welcome email to get you started.')
             } else {
               // Welcome email failed, but signup was successful
+              const errorData = await welcomeEmailResponse.json()
+              console.log('Welcome email failed:', errorData)
               setMessage('Check your email for the confirmation link!')
               console.log('Welcome email failed to send, but signup was successful')
             }
           } catch (welcomeEmailError) {
             // Welcome email failed, but signup was successful
+            console.log('Welcome email error:', welcomeEmailError)
             setMessage('Check your email for the confirmation link!')
             console.log('Welcome email failed to send:', welcomeEmailError)
           } finally {
             setWelcomeEmailLoading(false)
           }
         } else {
+          console.log('No user data returned from signup')
           setMessage('Check your email for the confirmation link!')
         }
       }

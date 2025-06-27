@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { createClient } from '@supabase/supabase-js'
+import { cookies } from 'next/headers'
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
+
+// Create service role client for database operations
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 // Helper function to generate welcome email HTML
 function generateWelcomeEmailHTML(userEmail: string, userName?: string): string {
@@ -127,16 +135,16 @@ function generateWelcomeEmailHTML(userEmail: string, userName?: string): string 
           
           <div class="features">
             <div class="feature">
-              <span class="feature-icon">✅</span>
-              <strong>Smart Protection</strong> – Automated trial monitoring
+              <span class="feature-icon">💰</span>
+              <strong>Save Money Automatically</strong> – Avoid paying for subscriptions you forgot to cancel
             </div>
             <div class="feature">
               <span class="feature-icon">🔔</span>
-              <strong>Instant Alerts</strong> – Real-time notifications
+              <strong>Get Reminded Before You Pay</strong> – Smart alerts help you cancel on time — before it's too late
             </div>
             <div class="feature">
-              <span class="feature-icon">⏰</span>
-              <strong>Time Management</strong> – Never miss a deadline
+              <span class="feature-icon">📊</span>
+              <strong>Track All Your Free Trials in One Place</strong> – From Netflix to Notion, stay organized with a central dashboard
             </div>
           </div>
           
@@ -167,10 +175,19 @@ function generateWelcomeEmailHTML(userEmail: string, userName?: string): string 
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+    // Debug environment variables
+    console.log('Environment variables check:')
+    console.log('NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Not set')
+    console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Set' : 'Not set')
+    console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'Set' : 'Not set')
+
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('Missing required environment variables')
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      )
+    }
 
     const { user_id, email, user_metadata } = await request.json()
 
@@ -182,7 +199,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if welcome email was already sent
-    const { data: existingLog } = await supabase
+    const { data: existingLog } = await supabaseAdmin
       .from('email_logs')
       .select('id')
       .eq('user_id', user_id)
@@ -197,7 +214,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create email log entry
-    const { data: emailLog, error: logError } = await supabase
+    const { data: emailLog, error: logError } = await supabaseAdmin
       .from('email_logs')
       .insert({
         user_id,
@@ -234,7 +251,7 @@ export async function POST(request: NextRequest) {
       console.error('Failed to send welcome email:', emailError)
       
       // Update email log with error
-      await supabase
+      await supabaseAdmin
         .from('email_logs')
         .update({
           status: 'failed',
@@ -250,7 +267,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update email log with success
-    await supabase
+    await supabaseAdmin
       .from('email_logs')
       .update({
         status: 'sent',
