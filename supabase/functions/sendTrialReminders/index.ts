@@ -7,6 +7,30 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Array of rotating email message variants
+const messageVariants = [
+  "Look at you, dodging charges like a ninja.",
+  "Most people forget - you remembered. Wallet: Safe ✅",
+  "You're the kind of person who cancels in time. We like that.",
+  "Free trial foiled. Sentinel: 1, Sneaky charges: 0.",
+  "You just dodged a billing trap. The Free Trial Sentinel stands watch - so you don't have to.",
+  "Canceling before the charge hits? That's main character energy.",
+  "You cancelled just in time. Somewhere, a subscription manager weeps.",
+  "Forgotten trial fees? Not on your watch. You're like the Liam Neeson of subscriptions - they will not take your money.",
+  "You avoided a fee. That's passive income… kinda.",
+  "This is why you're financially ahead of 87% of people. Probably.",
+  "You cancelled in time. The \"Free Trial Gods\" are pleased.",
+  "Nice move - you stayed one step ahead. The Sentinel approves."
+]
+
+// Helper function to get rotating message variant
+function getRotatingMessageVariant(userVariantIndex: number): { message: string, nextIndex: number } {
+  const index = userVariantIndex || 0
+  const message = messageVariants[index % messageVariants.length]
+  const nextIndex = (index + 1) % messageVariants.length
+  return { message, nextIndex }
+}
+
 // Helper function to calculate days left consistently with the main app
 function calculateDaysLeft(endDate: string): number {
   const now = new Date()
@@ -33,8 +57,8 @@ function calculateDaysLeft(endDate: string): number {
   return daysDiff
 }
 
-// Helper function to generate email HTML
-function generateEmailHTML(trialName: string, daysLeft: number, endDate: string): string {
+// Helper function to generate email HTML with rotating messages
+function generateEmailHTML(trialName: string, daysLeft: number, endDate: string, messageVariant: string): string {
   const dashboardUrl = 'https://freetrialsentinel.com/dashboard'
   
   return `
@@ -78,6 +102,15 @@ function generateEmailHTML(trialName: string, daysLeft: number, endDate: string)
           font-weight: bold; 
           margin-bottom: 20px; 
         }
+        .message-variant {
+          font-style: italic;
+          color: #64748b;
+          margin: 15px 0;
+          padding: 10px;
+          background: #f1f5f9;
+          border-left: 3px solid #f97316;
+          border-radius: 4px;
+        }
         .cta-button { 
           display: inline-block; 
           background: linear-gradient(135deg, #f97316, #dc2626); 
@@ -106,6 +139,8 @@ function generateEmailHTML(trialName: string, daysLeft: number, endDate: string)
         <div class="days-left">⚠️ Expires in ${daysLeft} day${daysLeft === 1 ? '' : 's'}</div>
         
         <p>Your <strong>${trialName}</strong> trial is ending soon on <strong>${new Date(endDate).toLocaleDateString()}</strong>.</p>
+        
+        <div class="message-variant">💬 ${messageVariant}</div>
         
         <p>Don't forget to cancel if you don't want to be charged! Many users forget about their trials and end up paying for services they don't use.</p>
         
@@ -169,11 +204,10 @@ serve(async (req) => {
     let emailsSent = 0
     let errors = 0
 
-    // Filter trials that expire in 1 day (or today) using database-calculated field
+    // Filter trials that expire in 2 days only
     const targetTrials = allTrials?.filter(trial => {
       const daysUntilExpiry = trial.days_until_expiry
-      const shouldNotify = (daysUntilExpiry === 1 || daysUntilExpiry === 0)
-      
+      const shouldNotify = (daysUntilExpiry === 2)
       return shouldNotify
     }) || []
 
@@ -183,7 +217,7 @@ serve(async (req) => {
       try {
         const daysUntilExpiry = trial.days_until_expiry
         
-        // Get user email using admin API
+        // Get user email separately using admin API
         const { data: userData, error: userError } = await supabase.auth.admin.getUserById(trial.user_id)
         
         if (userError || !userData.user) {
@@ -216,8 +250,22 @@ serve(async (req) => {
           continue
         }
 
-        // Generate email content
-        const emailHtml = generateEmailHTML(trial.service_name, daysUntilExpiry, trial.end_date)
+        // Get user's email variant index from users table
+        const { data: userProfile, error: profileError } = await supabase
+          .from('users')
+          .select('email_variant_index')
+          .eq('id', trial.user_id)
+          .single()
+
+        if (profileError) {
+          console.warn(`[sendTrialReminders] Could not get user profile for trial ${trial.id}:`, profileError)
+        }
+
+        const userVariantIndex = userProfile?.email_variant_index || 0
+
+        // Generate email content with rotating message
+        const { message, nextIndex } = getRotatingMessageVariant(userVariantIndex)
+        const emailHtml = generateEmailHTML(trial.service_name, daysUntilExpiry, trial.end_date, message)
         const subject = daysUntilExpiry === 0 
           ? `🚨 ${trial.service_name} trial expires TODAY!`
           : `🚨 ${trial.service_name} trial expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'}`
@@ -242,7 +290,7 @@ serve(async (req) => {
           })
           errors++
         } else {
-          // Update last_notified timestamp
+          // Update last_notified timestamp in trials table
           const { error: updateError } = await supabase
             .from('trials')
             .update({ last_notified: now.toISOString() })
@@ -250,6 +298,16 @@ serve(async (req) => {
 
           if (updateError) {
             console.error(`[sendTrialReminders] Failed to update last_notified for trial ${trial.id}:`, updateError)
+          }
+
+          // Update email_variant_index in users table
+          const { error: variantUpdateError } = await supabase
+            .from('users')
+            .update({ email_variant_index: nextIndex })
+            .eq('id', trial.user_id)
+
+          if (variantUpdateError) {
+            console.error(`[sendTrialReminders] Failed to update email_variant_index for user ${trial.user_id}:`, variantUpdateError)
           }
 
           console.log(`[sendTrialReminders] Email sent successfully for ${trial.service_name} to ${userEmail}`)
