@@ -1,0 +1,9 @@
+{
+  "name": "send-welcome-email",
+  "version": "1.0.0",
+  "description": "Supabase Edge Function to send welcome emails to new users",
+  "main": "index.ts",
+  "dependencies": {
+    "resend": "^2.0.0"
+  }
+} 
