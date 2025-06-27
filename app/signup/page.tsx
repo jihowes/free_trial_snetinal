@@ -155,7 +155,7 @@ export default function SignupPage() {
           </div>
 
           <motion.div 
-            className="relative z-10 text-center space-y-8"
+            className="relative z-10 space-y-8"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
@@ -164,8 +164,8 @@ export default function SignupPage() {
               <Logo size="xl" containerSize="xl" className="mx-auto mb-6" />
             </motion.div>
             
-            <motion.div variants={itemVariants} className="space-y-4">
-              <p className="text-xl text-slate-300 max-w-md">
+            <motion.div variants={itemVariants} className="space-y-4 pl-13">
+              <p className="text-xl text-slate-300 max-w-md text-left">
                 Start protecting your free trials today. Never lose track of important deadlines again.
               </p>
             </motion.div>

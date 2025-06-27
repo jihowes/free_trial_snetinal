@@ -31,8 +31,22 @@ export default function LoginPage() {
   const [resetMessage, setResetMessage] = useState('')
   const [resetError, setResetError] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
   const router = useRouter()
   const supabase = createClientComponentClient()
+
+  const wittyMessages = [
+    "Because 'Oops, I forgot to cancel' gets expensive",
+    "Subscription traps? Consider them neutralized",
+    "Smarter than a subscription manager. Funnier too.",
+    "Because forgetting = paying. And paying sucks.",
+    "Save money by doing... not much.",
+    "Your wallet just exhaled.",
+    "Free trials should be free - we keep them that way.",
+    "Cancel anxiety? Gone.",
+    "You relax, we remind.",
+    "Because forgetting = paying. And paying sucks."
+  ]
 
   // Check for pre-filled email when component mounts
   useEffect(() => {
@@ -45,6 +59,15 @@ export default function LoginPage() {
       }
     }
   }, [])
+
+  // Rotate through witty messages
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentMessageIndex((prev) => (prev + 1) % wittyMessages.length)
+    }, 10000)
+
+    return () => clearInterval(interval)
+  }, [wittyMessages.length])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -138,7 +161,7 @@ export default function LoginPage() {
           </div>
 
           <motion.div 
-            className="relative z-10 text-center space-y-8"
+            className="relative z-10 space-y-8"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
@@ -147,25 +170,21 @@ export default function LoginPage() {
               <Logo size="xl" containerSize="xl" className="mx-auto mb-6" />
             </motion.div>
             
-            <motion.div variants={itemVariants} className="space-y-4">
-              <h1 className="text-4xl font-bold text-white font-outfit">
+            <motion.div variants={itemVariants} className="space-y-4 pl-8">
+              <h1 className="text-4xl font-bold text-white font-outfit text-left">
                 Welcome to Sentinel
               </h1>
-              <p className="text-xl text-slate-300 max-w-md">
-                Your intelligent guardian against trial expiration. Never miss a deadline again.
-              </p>
+              <div className="text-xl text-slate-300 text-left space-y-2">
+                <p>Your intelligent guardian against trial expiration.</p>
+                <p>Never miss a deadline again.</p>
+              </div>
             </motion.div>
 
-            <motion.div variants={itemVariants} className="space-y-4">
-              <div className="flex items-center justify-center space-x-4 text-slate-400">
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-fantasy-crimson rounded-full animate-pulse"></div>
-                  <span className="text-sm">Real-time monitoring</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-fantasy-molten rounded-full animate-pulse delay-300"></div>
-                  <span className="text-sm">Smart alerts</span>
-                </div>
+            <motion.div variants={itemVariants} className="space-y-4 pl-24">
+              <div className="text-slate-400">
+                <span className="text-sm italic">
+                  {wittyMessages[currentMessageIndex]}
+                </span>
               </div>
             </motion.div>
           </motion.div>
