@@ -9,19 +9,22 @@ const corsHeaders = {
 
 // Array of rotating email message variants
 const messageVariants = [
-  "Look at you, dodging charges like a ninja.",
-  "Most people forget - you remembered. Wallet: Safe ✅",
-  "You're the kind of person who cancels in time. We like that.",
-  "Free trial foiled. Sentinel: 1, Sneaky charges: 0.",
-  "You just dodged a billing trap. The Free Trial Sentinel stands watch - so you don't have to.",
-  "Canceling before the charge hits? That's main character energy.",
-  "You cancelled just in time. Somewhere, a subscription manager weeps.",
-  "Forgotten trial fees? Not on your watch. You're like the Liam Neeson of subscriptions - they will not take your money.",
-  "You avoided a fee. That's passive income… kinda.",
-  "This is why you're financially ahead of 87% of people. Probably.",
-  "You cancelled in time. The \"Free Trial Gods\" are pleased.",
-  "Nice move - you stayed one step ahead. The Sentinel approves."
-]
+  "A charge is coming soon — unless you say otherwise. The Sentinel has your back.",
+  "You're on the clock. Cancel now, thank yourself later.",
+  "Time’s ticking on this trial — and your wallet is watching 👀",
+  "Your free trial is almost up. Still want it? No judgment. Just don’t forget.",
+  "You’re the kind of person who doesn’t get caught off guard. Right?",
+  "Tick tock. Don’t let this trial sneak into your next billing cycle.",
+  "You’re about to become a paying customer — unless you don’t want to be.",
+  "Friendly reminder: You control your trials. Don’t let them control your bank account.",
+  "Another trial is about to end. What’s the play, strategist?",
+  "You didn’t sign up for ‘forever’. Cancel before it flips the switch.",
+  "Time to decide: Keep it or cut it. Either way, you're in control.",
+  "A quick cancel now could save future-you a whole hassle.",
+  "This trial ends soon. Don’t let it turn into another ‘oops’ moment.",
+  "Don’t forget: The cancel button exists for a reason. You’ve got this.",
+  "This is your reminder — because the service won't send one. 😉"
+];
 
 // Helper function to get rotating message variant
 function getRotatingMessageVariant(userVariantIndex: number): { message: string, nextIndex: number } {
@@ -141,8 +144,6 @@ function generateEmailHTML(trialName: string, daysLeft: number, endDate: string,
         <p>Your <strong>${trialName}</strong> trial is ending soon on <strong>${new Date(endDate).toLocaleDateString()}</strong>.</p>
         
         <div class="message-variant">💬 ${messageVariant}</div>
-        
-        <p>Don't forget to cancel if you don't want to be charged! Many users forget about their trials and end up paying for services they don't use.</p>
         
         <a href="${dashboardUrl}" class="cta-button">View My Trials</a>
         
