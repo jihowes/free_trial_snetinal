@@ -30,10 +30,6 @@ function calculateDaysLeft(endDate: string): number {
   const timeDiff = endDateOnly.getTime() - nowDate.getTime()
   const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24))
   
-  // Debug logging
-  console.log(`calculateDaysLeft debug: now=${now.toISOString()}, end=${end.toISOString()}, nowDate=${nowDate.toISOString()}, endDateOnly=${endDateOnly.toISOString()}, timeDiff=${timeDiff}, daysDiff=${daysDiff}`)
-  console.log(`Date components: now(${nowYear}-${nowMonth}-${nowDay}) vs end(${endYear}-${endMonth}-${endDay})`)
-  
   return daysDiff
 }
 
@@ -155,20 +151,19 @@ serve(async (req) => {
 
     console.log(`Checking for trials expiring on: ${oneDayEndOfDay.toISOString()}`)
 
-    // Use database-calculated days_until_expiry field
+    // Query for trials expiring in 1 day using database-calculated field
     const { data: allTrials, error } = await supabase
       .from('trials')
       .select('id, service_name, end_date, last_notified, user_id, days_until_expiry')
       .eq('outcome', 'active')
-      // Temporarily remove last_notified filter for testing
-      // .or('last_notified.is.null,last_notified.lt.' + new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString())
+      .or('last_notified.is.null,last_notified.lt.' + new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString())
 
     if (error) {
-      console.error('Database query error:', error)
+      console.error('[sendTrialReminders] Database query error:', error)
       throw error
     }
 
-    console.log(`Found ${allTrials?.length || 0} total active trials`)
+    console.log(`[sendTrialReminders] Found ${allTrials?.length || 0} active trials`)
 
     const results = []
     let emailsSent = 0
@@ -179,33 +174,20 @@ serve(async (req) => {
       const daysUntilExpiry = trial.days_until_expiry
       const shouldNotify = (daysUntilExpiry === 1 || daysUntilExpiry === 0)
       
-      // Debug logging
-      console.log(`Trial ${trial.service_name}: days_until_expiry=${daysUntilExpiry}, shouldNotify=${shouldNotify}, end_date=${trial.end_date}`)
-      
       return shouldNotify
     }) || []
 
     console.log(`Found ${targetTrials.length} trials to process for email reminders`)
 
-    // Add detailed debug info for each trial
-    const trialDebugInfo = allTrials?.map(trial => ({
-      service_name: trial.service_name,
-      end_date: trial.end_date,
-      days_until_expiry: trial.days_until_expiry,
-      should_notify: (trial.days_until_expiry === 1 || trial.days_until_expiry === 0),
-      last_notified: trial.last_notified
-    })) || []
-
     for (const trial of targetTrials) {
       try {
-        // Use the database-calculated days_until_expiry
         const daysUntilExpiry = trial.days_until_expiry
         
-        // Get user email separately using admin API
+        // Get user email using admin API
         const { data: userData, error: userError } = await supabase.auth.admin.getUserById(trial.user_id)
         
         if (userError || !userData.user) {
-          console.warn(`No user found for trial ${trial.id}:`, userError)
+          console.warn(`[sendTrialReminders] No user found for trial ${trial.id}:`, userError)
           results.push({
             trial_id: trial.id,
             service_name: trial.service_name,
@@ -221,7 +203,7 @@ serve(async (req) => {
         const userEmail = userData.user.email
         
         if (!userEmail) {
-          console.warn(`No email found for trial ${trial.id}`)
+          console.warn(`[sendTrialReminders] No email found for trial ${trial.id}`)
           results.push({
             trial_id: trial.id,
             service_name: trial.service_name,
@@ -249,7 +231,7 @@ serve(async (req) => {
         })
 
         if (emailError) {
-          console.error(`Failed to send email for trial ${trial.id}:`, emailError)
+          console.error(`[sendTrialReminders] Failed to send email for trial ${trial.id}:`, emailError)
           results.push({
             trial_id: trial.id,
             service_name: trial.service_name,
@@ -267,10 +249,10 @@ serve(async (req) => {
             .eq('id', trial.id)
 
           if (updateError) {
-            console.error(`Failed to update last_notified for trial ${trial.id}:`, updateError)
+            console.error(`[sendTrialReminders] Failed to update last_notified for trial ${trial.id}:`, updateError)
           }
 
-          console.log(`Email sent successfully for trial ${trial.id} to ${userEmail}`)
+          console.log(`[sendTrialReminders] Email sent successfully for ${trial.service_name} to ${userEmail}`)
           results.push({
             trial_id: trial.id,
             service_name: trial.service_name,
@@ -282,7 +264,7 @@ serve(async (req) => {
           emailsSent++
         }
       } catch (trialError) {
-        console.error(`Error processing trial ${trial.id}:`, trialError)
+        console.error(`[sendTrialReminders] Error processing trial ${trial.id}:`, trialError)
         results.push({
           trial_id: trial.id,
           service_name: trial.service_name,
@@ -301,17 +283,10 @@ serve(async (req) => {
       emails_sent: emailsSent,
       errors: errors,
       timestamp: now.toISOString(),
-      debug: {
-        total_trials: allTrials?.length || 0,
-        target_trials_count: targetTrials.length,
-        current_date: now.toISOString(),
-        one_day_from_now: oneDayEndOfDay.toISOString()
-      },
-      results,
-      trial_debug_info: trialDebugInfo
+      results
     }
 
-    console.log('Function completed:', response)
+    console.log(`[sendTrialReminders] Completed: ${emailsSent} emails sent, ${errors} errors`)
 
     return new Response(
       JSON.stringify(response),
@@ -322,7 +297,7 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Function error:', error)
+    console.error('[sendTrialReminders] Function error:', error)
     return new Response(
       JSON.stringify({ 
         error: error.message,
