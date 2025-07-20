@@ -8,41 +8,33 @@ export async function GET(request: Request) {
   const next = requestUrl.searchParams.get('next')
   const type = requestUrl.searchParams.get('type')
 
-  // If this is a password reset request (either with code or next parameter)
-  if (type === 'recovery' || next === '/reset-password') {
-    if (code) {
-      const supabase = createRouteHandlerClient({ cookies })
-      const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-      
-      if (error) {
-        console.error('Auth callback error:', error)
-        return NextResponse.redirect(new URL('/login?error=auth_error', requestUrl.origin))
-      }
+  console.log('Auth callback debug:', { code: !!code, next, type, fullUrl: requestUrl.toString() })
 
-      if (data.session?.user?.aud === 'authenticated') {
-        return NextResponse.redirect(new URL('/reset-password', requestUrl.origin))
-      }
-    } else {
-      // No code but password reset request, redirect to reset-password
-      return NextResponse.redirect(new URL('/reset-password', requestUrl.origin))
-    }
-  }
-
-  // Handle regular auth with code
+  // If we have a code, try to exchange it for a session
   if (code) {
     const supabase = createRouteHandlerClient({ cookies })
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    
+    console.log('Auth exchange result:', { hasData: !!data, hasError: !!error, error: error?.message })
     
     if (error) {
       console.error('Auth callback error:', error)
       return NextResponse.redirect(new URL('/login?error=auth_error', requestUrl.origin))
     }
 
-    // Successful auth, redirect to dashboard or specified next
+    // If this is a password reset (type=recovery or next=/reset-password)
+    if (type === 'recovery' || next === '/reset-password') {
+      console.log('Password reset detected, redirecting to reset-password')
+      return NextResponse.redirect(new URL('/reset-password', requestUrl.origin))
+    }
+
+    // Regular auth success, redirect to dashboard or specified next
     const redirectUrl = next || '/dashboard'
+    console.log('Regular auth success, redirecting to:', redirectUrl)
     return NextResponse.redirect(new URL(redirectUrl, requestUrl.origin))
   }
 
-  // No code and no valid request, redirect to login
-  return NextResponse.redirect(new URL('/login?error=invalid_request', requestUrl.origin))
+  // No code provided
+  console.log('No code provided, redirecting to login')
+  return NextResponse.redirect(new URL('/login?error=no_code', requestUrl.origin))
 } 
