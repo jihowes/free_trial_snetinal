@@ -7,8 +7,22 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get('code')
   const next = requestUrl.searchParams.get('next')
   const type = requestUrl.searchParams.get('type')
+  const error = requestUrl.searchParams.get('error')
+  const errorDescription = requestUrl.searchParams.get('error_description')
 
-  console.log('Auth callback debug:', { code: !!code, next, type, fullUrl: requestUrl.toString() })
+  console.log('Auth callback debug:', { code: !!code, next, type, error, errorDescription, fullUrl: requestUrl.toString() })
+
+  // Handle errors (expired links, etc.)
+  if (error) {
+    console.log('Auth callback error detected:', error)
+    if (next === '/reset-password') {
+      // Password reset link expired, redirect to reset-password with error
+      return NextResponse.redirect(new URL(`/reset-password?error=${error}&error_description=${errorDescription}`, requestUrl.origin))
+    } else {
+      // Other auth error, redirect to login
+      return NextResponse.redirect(new URL(`/login?error=${error}&error_description=${errorDescription}`, requestUrl.origin))
+    }
+  }
 
   // If this is a password reset request, redirect directly to reset-password
   if (type === 'recovery' || next === '/reset-password') {
