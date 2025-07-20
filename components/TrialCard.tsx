@@ -172,23 +172,25 @@ export function TrialCard({ id, service_name, end_date, cost, billing_frequency,
     return (
       <div className="w-full">
         <Card className="relative overflow-hidden border-0 shadow-lg transition-all duration-300 bg-slate-800/20 border-slate-600/30 shadow-slate-500/10">
-          <div className="relative p-6">
+          <div className="relative p-3 md:p-6">
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-3 mb-3">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-slate-500/20 text-slate-400">
-                    <Calendar className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-white truncate">
-                      {service_name}
-                    </h3>
-                    <p className="text-sm text-slate-400">
-                      Loading...
-                    </p>
+                <div className="flex items-center justify-between mb-2 md:mb-3">
+                  <div className="flex items-center space-x-2 md:space-x-3 flex-1 min-w-0">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center bg-slate-500/20 text-slate-400 flex-shrink-0">
+                      <Calendar className="w-4 h-4 md:w-5 md:h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base md:text-lg font-semibold text-white truncate">
+                        {service_name}
+                      </h3>
+                      <p className="text-xs md:text-sm text-slate-400">
+                        Loading...
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-medium bg-slate-500/20 border border-slate-500/30 text-slate-300">
+                <div className="inline-flex items-center space-x-1.5 md:space-x-2 px-2 md:px-3 py-1 md:py-1.5 rounded-full text-xs md:text-sm font-medium bg-slate-500/20 border border-slate-500/30 text-slate-300">
                   <span>Loading...</span>
                 </div>
               </div>
@@ -232,15 +234,50 @@ export function TrialCard({ id, service_name, end_date, cost, billing_frequency,
           ${isUrgent ? 'bg-red-500/5' : isWarning ? 'bg-amber-500/5' : 'bg-slate-500/5'}
         `} />
         
-        <div className="relative p-6">
+        <div className="relative p-3 md:p-6">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center space-x-3 mb-3">
-                <div className="flex flex-col items-center justify-center mr-2 min-w-[40px]">
+              <div className="flex items-center justify-between mb-2 md:mb-3">
+                <div className="flex items-center space-x-2 md:space-x-3 flex-1 min-w-0">
+                  <div className={`
+                    w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0
+                    ${isUrgent 
+                      ? 'bg-red-500/20 text-red-400' 
+                      : isWarning 
+                        ? 'bg-amber-500/20 text-amber-400'
+                        : 'bg-slate-500/20 text-slate-400'
+                    }
+                  `}>
+                    <Calendar className="w-4 h-4 md:w-5 md:h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base md:text-lg font-semibold text-white truncate">
+                      {service_name}
+                    </h3>
+                    <p className="text-xs md:text-sm text-slate-400">
+                      {daysLeft < 0 ? 'Expired' : 'Expires'} {endDate.toLocaleDateString('en-US', { 
+                        weekday: daysLeft <= 7 ? 'short' : 'long', 
+                        year: 'numeric', 
+                        month: daysLeft <= 7 ? 'short' : 'long', 
+                        day: 'numeric' 
+                      })}
+                    </p>
+                    {/* Potential savings indicator */}
+                    {cost && cost > 0 && daysLeft >= 0 && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <span className="text-xs text-slate-500">
+                          {typeof formatCurrency === 'function' ? formatCurrency(cost) : `$${cost.toFixed(2)}`}/{billing_frequency || 'month'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Action button moved to right side */}
+                <div className="flex-shrink-0 ml-2">
                   <motion.div
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
-                    className="mb-1"
                   >
                     {isExpired ? (
                       <Button
@@ -317,38 +354,6 @@ export function TrialCard({ id, service_name, end_date, cost, billing_frequency,
                       </div>
                     )}
                   </motion.div>
-                  <div className={`
-                    w-10 h-10 rounded-lg flex items-center justify-center
-                    ${isUrgent 
-                      ? 'bg-red-500/20 text-red-400' 
-                      : isWarning 
-                        ? 'bg-amber-500/20 text-amber-400'
-                        : 'bg-slate-500/20 text-slate-400'
-                    }
-                  `}>
-                    <Calendar className="w-5 h-5" />
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-semibold text-white truncate">
-                    {service_name}
-                  </h3>
-                  <p className="text-sm text-slate-400">
-                    {daysLeft < 0 ? 'Expired' : 'Expires'} {endDate.toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
-                  </p>
-                  {/* Potential savings indicator */}
-                  {cost && cost > 0 && daysLeft >= 0 && (
-                    <div className="flex items-center gap-1 mt-1">
-                      <span className="text-xs text-slate-500">
-                        {typeof formatCurrency === 'function' ? formatCurrency(cost) : `$${cost.toFixed(2)}`}/{billing_frequency || 'month'}
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
               
@@ -451,7 +456,12 @@ export function TrialCard({ id, service_name, end_date, cost, billing_frequency,
                   </label>
                   <select
                     value={editForm.billing_frequency}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, billing_frequency: e.target.value }))}
+                    onChange={(e) => {
+                      setEditForm(prev => ({ ...prev, billing_frequency: e.target.value as 'weekly' | 'fortnightly' | 'monthly' | 'yearly' }))
+                      if (editErrors.billing_frequency) {
+                        setEditErrors(prev => ({ ...prev, billing_frequency: '' }))
+                      }
+                    }}
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="monthly">Monthly</option>

@@ -45,7 +45,7 @@ export function CountdownBadge({ daysLeft, isUrgent, isWarning }: CountdownBadge
     <motion.div
       key={pulseKey}
       className={`
-        inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap
+        inline-flex items-center space-x-1.5 md:space-x-2 px-2 md:px-3 py-1 md:py-1.5 rounded-full text-xs md:text-sm font-medium whitespace-nowrap
         ${isUrgent 
           ? 'bg-red-500/20 border border-red-500/30 text-red-400' 
           : isWarning 

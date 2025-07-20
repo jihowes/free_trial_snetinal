@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/Button'
 import { User } from '@supabase/supabase-js'
 import { LogoIcon } from '@/components/ui/Logo'
-import { LogOut, Plus, Search, Filter, RefreshCw, Trash2, Heart } from 'lucide-react'
+import { LogOut, Plus, Search, Filter, Trash2, Heart, ChevronDown } from 'lucide-react'
 import FantasyBackgroundWrapper from '@/components/FantasyBackgroundWrapper'
 import { DashboardHeader } from '@/components/DashboardHeader'
 import { TrialCard } from '@/components/TrialCard'
@@ -56,8 +56,12 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
   const [processedTrials, setProcessedTrials] = useState<Set<string>>(new Set())
   const [currentTrials, setCurrentTrials] = useState<Trial[]>(trials)
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
-  const [refreshing, setRefreshing] = useState(false)
   const [currentTime, setCurrentTime] = useState<Date>(new Date())
+  const [graveyardExpanded, setGraveyardExpanded] = useState<{[key: string]: boolean}>({
+    kept: true,
+    cancelled: true,
+    expired: true
+  })
   const router = useRouter()
   const supabase = createClientComponentClient()
   const { formatCurrency } = useCurrency()
@@ -75,7 +79,6 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
   useEffect(() => {
     const refreshTrials = async () => {
       try {
-        setRefreshing(true)
         const { data: freshTrials, error } = await supabase
           .from('trials')
           .select('*')
@@ -88,8 +91,6 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
         }
       } catch (error) {
         console.error('Error refreshing trials:', error)
-      } finally {
-        setRefreshing(false)
       }
     }
 
@@ -359,29 +360,6 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
     }
   }
 
-  // Manual refresh function
-  const handleManualRefresh = async () => {
-    try {
-      setRefreshing(true)
-      const { data: freshTrials, error } = await supabase
-        .from('trials')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('end_date', { ascending: true })
-      
-      if (!error && freshTrials) {
-        setCurrentTrials(freshTrials)
-        setLastUpdated(new Date())
-        showToastMessage('Trials refreshed!')
-      }
-    } catch (error) {
-      console.error('Error refreshing trials:', error)
-      showToastMessage('Failed to refresh trials')
-    } finally {
-      setRefreshing(false)
-    }
-  }
-
   return (
     <>
       <FantasyBackgroundWrapper showEmbers={true} showEyeGlow={true}>
@@ -393,45 +371,44 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
               animate="visible"
             >
               {/* Header */}
-              <motion.header variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-3 border-b border-slate-700/50 mt-2">
-                <div className="flex items-center gap-4 mb-3 md:mb-0">
-                  <LogoIcon size="xl" />
-                  <span className="ml-2 text-2xl font-black tracking-tight uppercase">
+              <motion.header
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0">
+                    <LogoIcon className="w-8 h-8 md:w-10 md:h-10" />
+                  </div>
+                  <span className="text-lg md:text-2xl font-bold">
                     <span className="text-white">FREE TRIAL </span>
                     <span className="text-orange-500">SENTINEL</span>
                   </span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Button 
-                    variant="secondary"
-                    onClick={handleManualRefresh}
-                    disabled={refreshing}
-                    className="flex items-center gap-2 bg-slate-800/50 border border-slate-700/50 hover:bg-slate-700/50 text-slate-300"
-                  >
-                    <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                    {refreshing ? 'Refreshing...' : 'Refresh'}
-                  </Button>
+                <div className="flex items-center gap-2 md:gap-3">
                   <Button 
                     onClick={() => router.push('/explore')}
-                    className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-orange-500/25"
+                    className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-orange-500/25 px-2 md:px-4 py-2"
                   >
-                    🔍 Explore Trials
+                    <span className="hidden md:inline">🔍 Explore Trials</span>
+                    <span className="md:hidden">🔍</span>
                   </Button>
                   <Button 
                     onClick={() => router.push('/dashboard/add-trial')}
-                    className="bg-gradient-to-r from-fantasy-crimson to-fantasy-molten hover:from-fantasy-molten hover:to-fantasy-crimson text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-fantasy-crimson/25"
+                    className="bg-gradient-to-r from-fantasy-crimson to-fantasy-molten hover:from-fantasy-molten hover:to-fantasy-crimson text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-fantasy-crimson/25 px-2 md:px-4 py-2"
                   >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add New Trial
+                    <Plus className="h-4 w-4 md:mr-2" />
+                    <span className="hidden md:inline">Add New Trial</span>
                   </Button>
                   <CurrencySelector />
                   <Button 
                     variant="secondary" 
                     onClick={handleLogout}
-                    className="flex items-center gap-2 bg-slate-800/50 border border-slate-700/50 hover:bg-slate-700/50 text-slate-300"
+                    className="flex items-center gap-1 md:gap-2 bg-slate-800/50 border border-slate-700/50 hover:bg-slate-700/50 text-slate-300 px-2 md:px-3 py-2"
                   >
                     <LogOut className="h-4 w-4" />
-                    Logout
+                    <span className="hidden md:inline">Logout</span>
                   </Button>
                 </div>
               </motion.header>
@@ -448,7 +425,7 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
               {currentTrials.length > 0 && (
                 <motion.div 
                   variants={itemVariants}
-                  className="mb-6 space-y-4"
+                  className="mb-6 space-y-3 md:space-y-4"
                 >
                   {/* Filter Toggle */}
                   <div className="flex flex-wrap gap-2">
@@ -460,7 +437,7 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
                         key={filter.key}
                         onClick={() => setFilterBy(filter.key as any)}
                         className={`
-                          px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
+                          px-3 md:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
                           ${filterBy === filter.key 
                             ? 'bg-fantasy-crimson text-white shadow-lg' 
                             : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50 hover:text-white border border-slate-700/50'
@@ -473,7 +450,7 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
                   </div>
 
                   {/* Search */}
-                  <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
                     <div className="relative flex-1">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                       <input
@@ -513,7 +490,7 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6"
+                      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4 lg:gap-6"
                     >
                       <AnimatePresence>
                         {filteredAndSortedTrials.map((trial, index) => (
@@ -542,6 +519,13 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
                   )
                   
                   if (actionedTrials.length > 0) {
+                    // Group trials by outcome
+                    const groupedTrials = {
+                      kept: actionedTrials.filter(t => t.outcome === 'kept'),
+                      cancelled: actionedTrials.filter(t => t.outcome === 'cancelled'),
+                      expired: actionedTrials.filter(t => t.outcome === 'expired')
+                    }
+
                     // Calculate total money saved from graveyard
                     const totalMoneySaved = actionedTrials.reduce((total, trial) => {
                       if ((trial.outcome === 'cancelled' || trial.outcome === 'expired') && trial.cost) {
@@ -551,21 +535,65 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
                       }
                       return total
                     }, 0)
-                    
-                    const cancelledTrials = actionedTrials.filter(t => t.outcome === 'cancelled').length
-                    const expiredTrials = actionedTrials.filter(t => t.outcome === 'expired').length
+
+                    const statusConfig = {
+                      kept: { 
+                        icon: '💰', 
+                        label: 'Kept', 
+                        color: 'text-purple-400', 
+                        bgColor: 'bg-purple-500/20',
+                        description: 'Trials you decided to keep'
+                      },
+                      cancelled: { 
+                        icon: '✅', 
+                        label: 'Cancelled', 
+                        color: 'text-blue-400', 
+                        bgColor: 'bg-blue-500/20',
+                        description: 'Trials cancelled before expiry'
+                      },
+                      expired: { 
+                        icon: '⏰', 
+                        label: 'Past Expiry', 
+                        color: 'text-red-400', 
+                        bgColor: 'bg-red-500/20',
+                        description: 'Trials that expired'
+                      }
+                    }
+
+                    const toggleSection = (section: string) => {
+                      setGraveyardExpanded(prev => ({
+                        ...prev,
+                        [section]: !prev[section]
+                      }))
+                    }
+
+                    const expandAll = () => {
+                      setGraveyardExpanded({
+                        kept: true,
+                        cancelled: true,
+                        expired: true
+                      })
+                    }
+
+                    const collapseAll = () => {
+                      setGraveyardExpanded({
+                        kept: false,
+                        cancelled: false,
+                        expired: false
+                      })
+                    }
                     
                     return (
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2, duration: 0.6 }}
-                        className="border-t border-slate-700/50 pt-8"
+                        className="border-t border-slate-700/50 pt-6 md:pt-8"
                       >
-                        <div className="flex items-center justify-between mb-6">
-                          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                        <div className="flex items-center justify-between mb-4 md:mb-6">
+                          <h2 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
                             <span>
-                              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                              <svg width="24" height="24" className="md:w-7 md:h-7" viewBox="0 0 28 28" fill="none">
                                 <defs>
                                   <linearGradient id="tombstone-gradient" x1="0" y1="0" x2="0" y2="28" gradientUnits="userSpaceOnUse">
                                     <stop stopColor="#e5e7eb"/>
@@ -585,83 +613,141 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
                             </span>
                             Trial Graveyard
                           </h2>
-                          <span className="text-slate-400 text-sm">
-                            {actionedTrials.length} actioned trial{actionedTrials.length > 1 ? 's' : ''}
-                          </span>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={expandAll}
+                              className="px-2 py-1 text-xs bg-slate-800/50 border border-slate-700/50 hover:bg-slate-700/50 text-slate-300"
+                            >
+                              Expand All
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={collapseAll}
+                              className="px-2 py-1 text-xs bg-slate-800/50 border border-slate-700/50 hover:bg-slate-700/50 text-slate-300"
+                            >
+                              Collapse All
+                            </Button>
+                          </div>
                         </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                          {actionedTrials.map((trial, index) => {
-                            const status = trial.outcome || 'unknown'
-                            const statusConfig = {
-                              active: { icon: '⏳', label: 'Active', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
-                              cancelled: { icon: '✅', label: 'Cancelled', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
-                              expired: { icon: '⏰', label: 'Past Expiry', color: 'text-red-400', bgColor: 'bg-red-500/20' },
-                              kept: { icon: '💰', label: 'Kept', color: 'text-purple-400', bgColor: 'bg-purple-500/20' },
-                              unknown: { icon: '❓', label: 'Unknown', color: 'text-yellow-400', bgColor: 'bg-yellow-500/20' }
-                            }
-                            const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.unknown
+
+                        {/* Grouped Trial Lists */}
+                        <div className="space-y-4">
+                          {Object.entries(groupedTrials).map(([status, trials]) => {
+                            if (trials.length === 0) return null
                             
-                            // Calculate money saved for this trial
-                            const moneySaved = (status === 'cancelled' || status === 'expired') && trial.cost 
-                              ? trial.cost 
-                              : (status === 'cancelled' || status === 'expired') 
-                                ? 10 // Estimated $10 if no cost set
-                                : 0
+                            const config = statusConfig[status as keyof typeof statusConfig]
+                            const isExpanded = graveyardExpanded[status]
                             
                             return (
                               <motion.div
-                                key={trial.id}
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: index * 0.1, duration: 0.4 }}
-                                className="p-4 rounded-lg border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm hover:bg-slate-800/50 transition-all duration-300"
+                                key={status}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.4, duration: 0.4 }}
+                                className="border border-slate-700/50 rounded-lg bg-slate-800/20 backdrop-blur-sm overflow-hidden"
                               >
-                                <div className="flex items-start justify-between mb-3">
-                                  <h3 className="font-semibold text-white text-sm">{trial.service_name}</h3>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-lg">{config.icon}</span>
-                                    <Button
-                                      variant="secondary"
-                                      size="sm"
-                                      onClick={() => handleToggleLike(trial.id, trial.liked || false)}
-                                      disabled={loading}
-                                      className={`p-1 rounded transition-all duration-200 ${
-                                        trial.liked 
-                                          ? 'text-pink-400 hover:text-pink-300 hover:bg-pink-500/20' 
-                                          : 'text-slate-400 hover:text-pink-400 hover:bg-pink-500/20'
-                                      }`}
-                                      title={trial.liked ? 'Remove from favorites' : 'Add to favorites'}
+                                {/* Section Header */}
+                                <button
+                                  onClick={() => toggleSection(status)}
+                                  className="w-full p-3 md:p-4 flex items-center justify-between hover:bg-slate-800/30 transition-colors"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-xl">{config.icon}</span>
+                                    <div className="text-left">
+                                      <h3 className={`font-semibold ${config.color}`}>
+                                        {config.label} ({trials.length})
+                                      </h3>
+                                      <p className="text-xs text-slate-400">
+                                        {config.description}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <ChevronDown 
+                                    className={`w-5 h-5 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
+                                  />
+                                </button>
+
+                                {/* Collapsible Content */}
+                                <AnimatePresence>
+                                  {isExpanded && (
+                                    <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: 'auto', opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      transition={{ duration: 0.3 }}
+                                      className="border-t border-slate-700/30"
                                     >
-                                      <Heart className={`w-3 h-3 ${trial.liked ? 'fill-current' : ''}`} />
-                                    </Button>
-                                  </div>
-                                </div>
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className={`text-xs px-2 py-1 rounded-full ${config.bgColor} ${config.color}`}>
-                                    {config.label}
-                                  </span>
-                                  <span className="text-xs text-slate-400">
-                                    {new Date(trial.end_date).toLocaleDateString()}
-                                  </span>
-                                </div>
-                                {/* Money saved display */}
-                                {(status === 'cancelled' || status === 'expired') && (
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-xs text-green-400 font-medium">
-                                      Saved: {formatCurrency(moneySaved)}
-                                    </span>
-                                    {trial.cost ? (
-                                      <span className="text-xs text-slate-500">
-                                        {formatCurrency(trial.cost)}/{trial.billing_frequency || 'month'}
-                                      </span>
-                                    ) : (
-                                      <span className="text-xs text-slate-500">
-                                        Estimated
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
+                                      <div className="p-3 md:p-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                                          {trials.map((trial, index) => {
+                                            // Calculate money saved for this trial
+                                            const moneySaved = (status === 'cancelled' || status === 'expired') && trial.cost 
+                                              ? trial.cost 
+                                              : (status === 'cancelled' || status === 'expired') 
+                                                ? 10 // Estimated $10 if no cost set
+                                                : 0
+                                            
+                                            return (
+                                              <motion.div
+                                                key={trial.id}
+                                                initial={{ opacity: 0, scale: 0.95 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                transition={{ delay: index * 0.05, duration: 0.3 }}
+                                                className="p-3 rounded-lg border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm hover:bg-slate-800/50 transition-all duration-300"
+                                              >
+                                                <div className="flex items-start justify-between mb-2">
+                                                  <h4 className="font-semibold text-white text-sm">{trial.service_name}</h4>
+                                                  <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    onClick={() => handleToggleLike(trial.id, trial.liked || false)}
+                                                    disabled={loading}
+                                                    className={`p-1 rounded transition-all duration-200 ${
+                                                      trial.liked 
+                                                        ? 'text-pink-400 hover:text-pink-300 hover:bg-pink-500/20' 
+                                                        : 'text-slate-400 hover:text-pink-400 hover:bg-pink-500/20'
+                                                    }`}
+                                                    title={trial.liked ? 'Remove from favorites' : 'Add to favorites'}
+                                                  >
+                                                    <Heart className={`w-3 h-3 ${trial.liked ? 'fill-current' : ''}`} />
+                                                  </Button>
+                                                </div>
+                                                <div className="flex items-center justify-between mb-2">
+                                                  <span className={`text-xs px-2 py-1 rounded-full ${config.bgColor} ${config.color}`}>
+                                                    {config.label}
+                                                  </span>
+                                                  <span className="text-xs text-slate-400">
+                                                    {new Date(trial.end_date).toLocaleDateString()}
+                                                  </span>
+                                                </div>
+                                                {/* Money saved display */}
+                                                {(status === 'cancelled' || status === 'expired') && (
+                                                  <div className="flex items-center justify-between">
+                                                    <span className="text-xs text-green-400 font-medium">
+                                                      Saved: {formatCurrency(moneySaved)}
+                                                    </span>
+                                                    {trial.cost ? (
+                                                      <span className="text-xs text-slate-500">
+                                                        {formatCurrency(trial.cost)}/{trial.billing_frequency || 'month'}
+                                                      </span>
+                                                    ) : (
+                                                      <span className="text-xs text-slate-500">
+                                                        Estimated
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                )}
+                                              </motion.div>
+                                            )
+                                          })}
+                                        </div>
+                                      </div>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
                               </motion.div>
                             )
                           })}
@@ -677,17 +763,17 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4, duration: 0.6 }}
-                  className="border-t border-slate-700/50 pt-8"
+                  className="border-t border-slate-700/50 pt-6 md:pt-8"
                 >
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                  <div className="flex items-center justify-between mb-4 md:mb-6">
+                    <h2 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
                       <span>🚀</span>
                       Coming Soon
                     </h2>
                     <span className="text-slate-400 text-sm">Future Enhancements</span>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                     {[
                       { icon: '📧', title: 'Gmail Inbox Sync', description: 'Auto-detect trial emails' },
                       { icon: '📅', title: 'Calendar Reminders', description: 'Smart notification system' },

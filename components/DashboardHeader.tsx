@@ -244,16 +244,16 @@ export function DashboardHeader({ userName, totalTrials, trials, nextExpiringTri
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.6 }}
-        className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4"
+        className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4"
       >
         {/* Money Saved Banner */}
-        <div className="p-4 md:p-6 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 backdrop-blur-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-            <div className="flex-shrink-0 p-2 md:p-3 rounded-lg bg-green-500/30 self-start sm:self-center">
-              <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-green-400" />
+        <div className="p-3 md:p-6 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 backdrop-blur-sm">
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="flex-shrink-0 p-2 md:p-3 rounded-lg bg-green-500/30">
+              <TrendingUp className="w-4 h-4 md:w-6 md:h-6 text-green-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-lg md:text-xl font-bold text-white mb-1">
+              <h2 className="text-base md:text-xl font-bold text-white mb-1">
                 Money Saved
               </h2>
               <p className="text-green-300 text-xs md:text-sm leading-relaxed">
@@ -266,8 +266,8 @@ export function DashboardHeader({ userName, totalTrials, trials, nextExpiringTri
                 }
               </p>
             </div>
-            <div className="flex-shrink-0 text-center sm:text-right">
-              <div className="text-xl md:text-2xl font-bold text-green-400">
+            <div className="flex-shrink-0 text-right">
+              <div className="text-lg md:text-2xl font-bold text-green-400">
                 {formatCurrency(moneySaved.totalSaved)}
               </div>
             </div>
@@ -275,13 +275,13 @@ export function DashboardHeader({ userName, totalTrials, trials, nextExpiringTri
         </div>
 
         {/* Potential Savings Banner */}
-        <div className="p-4 md:p-6 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/30 backdrop-blur-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-            <div className="flex-shrink-0 p-2 md:p-3 rounded-lg bg-blue-500/30 self-start sm:self-center">
-              <DollarSign className="w-5 h-5 md:w-6 md:h-6 text-blue-400" />
+        <div className="p-3 md:p-6 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/30 backdrop-blur-sm">
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="flex-shrink-0 p-2 md:p-3 rounded-lg bg-blue-500/30">
+              <DollarSign className="w-4 h-4 md:w-6 md:h-6 text-blue-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-lg md:text-xl font-bold text-white mb-1">
+              <h2 className="text-base md:text-xl font-bold text-white mb-1">
                 Potential Savings
               </h2>
               <p className="text-blue-300 text-xs md:text-sm leading-relaxed">
@@ -294,8 +294,8 @@ export function DashboardHeader({ userName, totalTrials, trials, nextExpiringTri
                 }
               </p>
             </div>
-            <div className="flex-shrink-0 text-center sm:text-right">
-              <div className="text-xl md:text-2xl font-bold text-blue-400">
+            <div className="flex-shrink-0 text-right">
+              <div className="text-lg md:text-2xl font-bold text-blue-400">
                 {formatCurrency(potentialSavings.potentialSavings)}
               </div>
             </div>
@@ -308,7 +308,7 @@ export function DashboardHeader({ userName, totalTrials, trials, nextExpiringTri
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 0.6 }}
-        className="grid grid-cols-2 md:grid-cols-4 gap-4"
+        className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4"
       >
         {stats.map((stat, index) => (
           <motion.div
@@ -317,17 +317,17 @@ export function DashboardHeader({ userName, totalTrials, trials, nextExpiringTri
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.6 + index * 0.1, duration: 0.4 }}
             className={`
-              p-4 rounded-lg border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm
+              p-3 md:p-4 rounded-lg border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm
               hover:bg-slate-800/50 transition-all duration-300 hover:scale-105
             `}
           >
-            <div className="flex items-center space-x-3">
-              <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                <stat.icon className={`w-5 h-5 ${stat.color}`} />
+            <div className="flex items-center space-x-2 md:space-x-3">
+              <div className={`p-1.5 md:p-2 rounded-lg ${stat.bgColor}`}>
+                <stat.icon className={`w-4 h-4 md:w-5 md:h-5 ${stat.color}`} />
               </div>
               <div>
-                <p className="text-sm text-slate-400">{stat.label}</p>
-                <p className={`font-semibold ${stat.color}`}>
+                <p className="text-xs md:text-sm text-slate-400">{stat.label}</p>
+                <p className={`text-sm md:text-base font-semibold ${stat.color}`}>
                   {typeof stat.value === 'number' ? stat.value : stat.value}
                 </p>
               </div>

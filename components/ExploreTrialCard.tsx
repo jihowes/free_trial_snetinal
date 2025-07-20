@@ -76,16 +76,14 @@ export function ExploreTrialCard({ trial, index }: ExploreTrialCardProps) {
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-slate-500/5" />
         
         <div className="relative p-6">
+          {/* Header with Icon and Score */}
           <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-4">
               <ServiceIcon serviceName={trial.service_name} size="lg" />
               <div className="flex-1 min-w-0">
                 <h3 className="text-lg font-semibold text-white truncate">
                   {trial.service_name}
                 </h3>
-                <p className="text-sm text-slate-400">
-                  {trial.trial_length_days === 0 ? 'Free' : `${trial.trial_length_days}-day trial`}
-                </p>
               </div>
             </div>
             
@@ -98,13 +96,13 @@ export function ExploreTrialCard({ trial, index }: ExploreTrialCardProps) {
 
           {/* Description */}
           {trial.description && (
-            <p className="text-sm text-slate-300 mb-4 line-clamp-2">
+            <p className="text-sm text-slate-300 mb-4 line-clamp-2 leading-relaxed">
               {trial.description}
             </p>
           )}
 
           {/* Category and Geo Badges */}
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex flex-wrap gap-2 mb-6">
             <Badge className="text-xs bg-slate-500/20 border-slate-500/30 text-slate-300">
               {trial.category}
             </Badge>
@@ -119,25 +117,12 @@ export function ExploreTrialCard({ trial, index }: ExploreTrialCardProps) {
             </div>
           </div>
 
-          {/* Price and CTA */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              {trial.monthly_price && trial.monthly_price > 0 ? (
-                <>
-                  <DollarSign className="w-4 h-4 text-slate-400" />
-                  <span className="text-sm text-slate-300">
-                    ${trial.monthly_price.toFixed(2)}/{trial.billing_frequency}
-                  </span>
-                </>
-              ) : (
-                <span className="text-sm text-green-400 font-medium">Free</span>
-              )}
-            </div>
-
+          {/* CTA Button - Full Width */}
+          <div className="flex justify-center">
             <Button
               onClick={handleTryFree}
               disabled={isLoading}
-              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-medium px-4 py-2 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+              className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-medium px-4 py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02]"
             >
               {isLoading ? (
                 <div className="flex items-center space-x-2">
@@ -146,7 +131,7 @@ export function ExploreTrialCard({ trial, index }: ExploreTrialCardProps) {
                 </div>
               ) : (
                 <div className="flex items-center space-x-2">
-                  <span>Try Free</span>
+                  <span>Dive In</span>
                   <ExternalLink className="w-4 h-4" />
                 </div>
               )}
