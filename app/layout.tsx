@@ -89,8 +89,28 @@ export default function RootLayout({
             __html: `
               // Prevent MetaMask from injecting and trying to connect
               if (typeof window !== 'undefined') {
-                window.ethereum = undefined;
-                window.web3 = undefined;
+                // Disable ethereum object
+                Object.defineProperty(window, 'ethereum', {
+                  value: undefined,
+                  writable: false,
+                  configurable: false
+                });
+                
+                // Disable web3 object
+                Object.defineProperty(window, 'web3', {
+                  value: undefined,
+                  writable: false,
+                  configurable: false
+                });
+                
+                // Prevent MetaMask from injecting
+                const originalAppendChild = Node.prototype.appendChild;
+                Node.prototype.appendChild = function(child) {
+                  if (child.src && child.src.includes('metamask')) {
+                    return child;
+                  }
+                  return originalAppendChild.call(this, child);
+                };
               }
             `,
           }}

@@ -60,6 +60,19 @@ export default function LoginPage() {
     }
   }, [])
 
+  // Handle password reset code parameter
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const code = urlParams.get('code')
+      
+      if (code) {
+        // This is a password reset link, redirect to reset-password page
+        router.replace(`/reset-password?code=${code}`)
+      }
+    }
+  }, [router])
+
   // Rotate through witty messages
   useEffect(() => {
     const interval = setInterval(() => {
@@ -101,7 +114,7 @@ export default function LoginPage() {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${location.origin}/reset-password`,
+        redirectTo: `${location.origin}/auth/callback?next=/reset-password`,
       })
 
       if (error) {
