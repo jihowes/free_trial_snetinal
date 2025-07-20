@@ -18,6 +18,11 @@ export function normalizeServiceName(name: string): string {
 // Service icon mapping
 const serviceIconMap: Record<string, ServiceIcon> = {
   // Streaming Services
+  test: {
+    path: '/icons/test-icon.svg',
+    alt: 'Test Icon',
+    type: 'svg'
+  },
   netflix: {
     path: '/icons/netflix.svg',
     alt: 'Netflix',
@@ -26,6 +31,11 @@ const serviceIconMap: Record<string, ServiceIcon> = {
   spotify: {
     path: '/icons/spotify.svg',
     alt: 'Spotify',
+    type: 'svg'
+  },
+  spotifypremium: {
+    path: '/icons/spotify-premium.svg',
+    alt: 'Spotify Premium',
     type: 'svg'
   },
   disneyplus: {

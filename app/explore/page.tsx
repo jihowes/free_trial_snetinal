@@ -1,13 +1,12 @@
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
-import { ExploreTrialCard } from '@/components/ExploreTrialCard'
+import { ExploreClient } from '@/components/ExploreClient'
 import { fetchCuratedTrials, getTrialCategories } from '@/lib/fetchTrials'
 import FantasyBackgroundWrapper from '@/components/FantasyBackgroundWrapper'
-import { ExploreFilters } from '@/components/ExploreFilters'
 import { Logo } from '@/components/ui/Logo'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
-import { Sparkles, Shield, Clock, TrendingUp, Zap, DollarSign, Bell, LayoutGrid } from 'lucide-react'
+import { Sparkles, DollarSign, Bell, LayoutGrid } from 'lucide-react'
 
 export default async function ExplorePage() {
   const supabase = createServerComponentClient({ cookies })
@@ -33,9 +32,9 @@ export default async function ExplorePage() {
 
         {/* Content */}
         <div className="relative z-10">
-          {/* Hero Section */}
+          {/* Header */}
           <div className="container mx-auto px-4 py-4 lg:py-6">
-            {/* Top Row - Logo and Buttons for anonymous users and logged-in users */}
+            {/* Top Row - Logo and Buttons */}
             {!user ? (
               <div className="flex flex-col sm:flex-row items-center justify-between mb-4 lg:mb-6 gap-4">
                 <div className="flex items-center">
@@ -120,69 +119,12 @@ export default async function ExplorePage() {
             )}
           </div>
 
-          {/* Main Content Section */}
-          <div className="container mx-auto px-4 pb-8 lg:pb-12">
-            <div className="text-center mb-6 lg:mb-8">
-              <div className="max-w-4xl mx-auto">
-                <div className="inline-flex items-center space-x-3 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-full px-6 py-3 mb-4">
-                  <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
-                  <span className="text-orange-400 font-semibold text-sm uppercase tracking-wide">Curated Collection</span>
-                </div>
-                <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4 leading-tight">
-                  Explore{' '}
-                  <span className="bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
-                    Curated Trials
-                  </span>
-                </h2>
-                <p className="text-lg lg:text-xl text-slate-300 leading-relaxed max-w-3xl mx-auto">
-                  Hand-picked free trials from the best services. Each trial is rated with our{' '}
-                  <span className="text-orange-400 font-semibold">Sentinel Score</span> to help you choose wisely.
-                </p>
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <ExploreFilters categories={categories} />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {trials.map((trial, index) => (
-                <ExploreTrialCard key={trial.id} trial={trial} index={index} />
-              ))}
-            </div>
-
-            {trials.length === 0 && (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">🔍</div>
-                <h3 className="text-xl font-semibold text-white mb-2">
-                  No trials found
-                </h3>
-                <p className="text-slate-400">
-                  Try adjusting your filters or check back later for new trials.
-                </p>
-              </div>
-            )}
-
-            {!user && trials.length > 0 && (
-              <div className="mt-12 text-center">
-                <div className="bg-gradient-to-r from-orange-900/30 to-red-900/30 p-6 rounded-xl border border-orange-500/20 backdrop-blur-sm">
-                  <h3 className="text-xl font-bold text-orange-300 mb-3">
-                    Ready to track your trials?
-                  </h3>
-                  <p className="text-orange-200/80 mb-4 max-w-2xl mx-auto">
-                    Create a free Sentinel account to get smart reminders before your trials expire. 
-                    Join thousands of users who never miss a deadline.
-                  </p>
-                  <Link href="/signup">
-                    <Button className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold px-6 py-3 text-base rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105">
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Start Protecting Your Trials
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Main Content - Client Component for Filtering */}
+          <ExploreClient 
+            initialTrials={trials} 
+            categories={categories} 
+            user={user}
+          />
         </div>
       </div>
     </FantasyBackgroundWrapper>
