@@ -65,10 +65,14 @@ export default function LoginPage() {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search)
       const code = urlParams.get('code')
+      const next = urlParams.get('next')
       
       if (code) {
         // This is a password reset link, redirect to reset-password page
         router.replace(`/reset-password?code=${code}`)
+      } else if (next === '/reset-password') {
+        // This is a redirect to reset-password without code, go there directly
+        router.replace('/reset-password')
       }
     }
   }, [router])

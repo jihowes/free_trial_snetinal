@@ -24,5 +24,10 @@ export async function GET(request: Request) {
     }
   }
 
+  // If no code but we have a next parameter pointing to reset-password, redirect there
+  if (!code && next === '/reset-password') {
+    return NextResponse.redirect(new URL('/reset-password', requestUrl.origin))
+  }
+
   return NextResponse.redirect(new URL(next, requestUrl.origin))
 } 

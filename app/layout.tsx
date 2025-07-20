@@ -88,30 +88,42 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               // Prevent MetaMask from injecting and trying to connect
-              if (typeof window !== 'undefined') {
-                // Disable ethereum object
-                Object.defineProperty(window, 'ethereum', {
-                  value: undefined,
-                  writable: false,
-                  configurable: false
-                });
-                
-                // Disable web3 object
-                Object.defineProperty(window, 'web3', {
-                  value: undefined,
-                  writable: false,
-                  configurable: false
-                });
-                
-                // Prevent MetaMask from injecting
-                const originalAppendChild = Node.prototype.appendChild;
-                Node.prototype.appendChild = function(child) {
-                  if (child.src && child.src.includes('metamask')) {
-                    return child;
-                  }
-                  return originalAppendChild.call(this, child);
-                };
-              }
+              (function() {
+                if (typeof window !== 'undefined') {
+                  // Block ethereum object
+                  Object.defineProperty(window, 'ethereum', {
+                    get: function() { return undefined; },
+                    set: function() { return undefined; },
+                    configurable: false
+                  });
+                  
+                  // Block web3 object
+                  Object.defineProperty(window, 'web3', {
+                    get: function() { return undefined; },
+                    set: function() { return undefined; },
+                    configurable: false
+                  });
+                  
+                  // Prevent MetaMask script injection
+                  const originalCreateElement = document.createElement;
+                  document.createElement = function(tagName) {
+                    const element = originalCreateElement.call(document, tagName);
+                    if (tagName.toLowerCase() === 'script') {
+                      Object.defineProperty(element, 'src', {
+                        get: function() { return this._src; },
+                        set: function(value) {
+                          if (value && value.includes('metamask')) {
+                            this._src = '';
+                            return;
+                          }
+                          this._src = value;
+                        }
+                      });
+                    }
+                    return element;
+                  };
+                }
+              })();
             `,
           }}
         />
