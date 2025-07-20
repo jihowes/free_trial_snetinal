@@ -66,8 +66,9 @@ export default function ResetPasswordPage() {
         // No code provided, check if user is already authenticated
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) {
-          setError('No valid reset link found. Please request a new password reset.')
+          // No session and no code, show expired link UI
           setLinkExpired(true)
+          setError('No valid reset link found. Please request a new password reset.')
         }
       }
     }
