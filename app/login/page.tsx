@@ -71,9 +71,10 @@ export default function LoginPage() {
       console.log('Login page URL params:', { code: !!code, next, error, fullUrl: window.location.href })
       
       if (code) {
-        // This is a password reset link, redirect to reset-password page
-        console.log('Redirecting to reset-password with code')
-        router.replace(`/reset-password?code=${code}`)
+        // This is a password reset link, immediately redirect to reset-password page
+        console.log('Code detected, immediately redirecting to reset-password')
+        window.location.href = `/reset-password?code=${code}`
+        return
       } else if (next === '/reset-password') {
         // This is a redirect to reset-password without code, go there directly
         console.log('Redirecting to reset-password without code')
@@ -124,9 +125,7 @@ export default function LoginPage() {
     setResetMessage('')
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${location.origin}/reset-password`,
-      })
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail)
 
       if (error) {
         setResetError(error.message)
