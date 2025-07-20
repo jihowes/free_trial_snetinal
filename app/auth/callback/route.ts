@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   // If this is a password reset request, redirect directly to reset-password
   if (type === 'recovery' || next === '/reset-password') {
     console.log('Password reset detected, redirecting to reset-password')
-    return NextResponse.redirect(new URL('/reset-password', requestUrl.origin))
+    return NextResponse.redirect(new URL(`/reset-password?code=${code}`, requestUrl.origin))
   }
 
   // If we have a code, try to exchange it for a session (for regular auth)
