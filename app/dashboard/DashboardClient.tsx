@@ -720,7 +720,7 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
                                                     {config.label}
                                                   </span>
                                                   <span className="text-xs text-slate-400">
-                                                    {new Date(trial.end_date).toLocaleDateString()}
+                                                    {new Date(trial.end_date).toLocaleDateString('en-US', { timeZone: 'UTC' })}
                                                   </span>
                                                 </div>
                                                 {/* Money saved display */}

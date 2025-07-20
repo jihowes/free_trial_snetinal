@@ -255,12 +255,17 @@ export function TrialCard({ id, service_name, end_date, cost, billing_frequency,
                       {service_name}
                     </h3>
                     <p className="text-xs md:text-sm text-slate-400">
-                      {daysLeft < 0 ? 'Expired' : 'Expires'} {endDate.toLocaleDateString('en-US', { 
-                        weekday: daysLeft <= 7 ? 'short' : 'long', 
-                        year: 'numeric', 
-                        month: daysLeft <= 7 ? 'short' : 'long', 
-                        day: 'numeric' 
-                      })}
+                      {daysLeft < 0 ? 'Expired' : 'Expires'} {(() => {
+                        const date = new Date(endDate)
+                        const options: Intl.DateTimeFormatOptions = {
+                          weekday: daysLeft <= 7 ? 'short' : 'long', 
+                          year: 'numeric', 
+                          month: daysLeft <= 7 ? 'short' : 'long', 
+                          day: 'numeric',
+                          timeZone: 'UTC' // Use UTC to ensure consistency
+                        }
+                        return date.toLocaleDateString('en-US', options)
+                      })()}
                     </p>
                     {/* Potential savings indicator */}
                     {cost && cost > 0 && daysLeft >= 0 && (

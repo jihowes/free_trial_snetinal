@@ -87,42 +87,51 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // Prevent MetaMask from injecting and trying to connect
+              // Aggressively prevent MetaMask from injecting and trying to connect
               (function() {
-                if (typeof window !== 'undefined') {
-                  // Block ethereum object
-                  Object.defineProperty(window, 'ethereum', {
-                    get: function() { return undefined; },
-                    set: function() { return undefined; },
-                    configurable: false
-                  });
-                  
-                  // Block web3 object
-                  Object.defineProperty(window, 'web3', {
-                    get: function() { return undefined; },
-                    set: function() { return undefined; },
-                    configurable: false
-                  });
-                  
-                  // Prevent MetaMask script injection
-                  const originalCreateElement = document.createElement;
-                  document.createElement = function(tagName) {
-                    const element = originalCreateElement.call(document, tagName);
-                    if (tagName.toLowerCase() === 'script') {
-                      Object.defineProperty(element, 'src', {
-                        get: function() { return this._src; },
-                        set: function(value) {
-                          if (value && value.includes('metamask')) {
-                            this._src = '';
-                            return;
-                          }
-                          this._src = value;
+                // Block ethereum object immediately
+                Object.defineProperty(window, 'ethereum', {
+                  get: function() { return undefined; },
+                  set: function() { return undefined; },
+                  configurable: false,
+                  enumerable: false
+                });
+                
+                // Block web3 object immediately
+                Object.defineProperty(window, 'web3', {
+                  get: function() { return undefined; },
+                  set: function() { return undefined; },
+                  configurable: false,
+                  enumerable: false
+                });
+                
+                // Block any attempt to access these properties
+                const originalGetOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
+                Object.getOwnPropertyDescriptor = function(obj, prop) {
+                  if (obj === window && (prop === 'ethereum' || prop === 'web3')) {
+                    return undefined;
+                  }
+                  return originalGetOwnPropertyDescriptor.call(this, obj, prop);
+                };
+                
+                // Prevent script injection
+                const originalCreateElement = document.createElement;
+                document.createElement = function(tagName) {
+                  const element = originalCreateElement.call(document, tagName);
+                  if (tagName.toLowerCase() === 'script') {
+                    Object.defineProperty(element, 'src', {
+                      get: function() { return this._src || ''; },
+                      set: function(value) {
+                        if (value && (value.includes('metamask') || value.includes('ethereum'))) {
+                          this._src = '';
+                          return;
                         }
-                      });
-                    }
-                    return element;
-                  };
-                }
+                        this._src = value;
+                      }
+                    });
+                  }
+                  return element;
+                };
               })();
             `,
           }}

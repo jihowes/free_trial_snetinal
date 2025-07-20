@@ -5,9 +5,30 @@ import { NextResponse } from 'next/server'
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
-  const next = requestUrl.searchParams.get('next') || '/dashboard'
+  const next = requestUrl.searchParams.get('next')
   const type = requestUrl.searchParams.get('type')
 
+  // If this is a password reset request (either with code or next parameter)
+  if (type === 'recovery' || next === '/reset-password') {
+    if (code) {
+      const supabase = createRouteHandlerClient({ cookies })
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+      
+      if (error) {
+        console.error('Auth callback error:', error)
+        return NextResponse.redirect(new URL('/login?error=auth_error', requestUrl.origin))
+      }
+
+      if (data.session?.user?.aud === 'authenticated') {
+        return NextResponse.redirect(new URL('/reset-password', requestUrl.origin))
+      }
+    } else {
+      // No code but password reset request, redirect to reset-password
+      return NextResponse.redirect(new URL('/reset-password', requestUrl.origin))
+    }
+  }
+
+  // Handle regular auth with code
   if (code) {
     const supabase = createRouteHandlerClient({ cookies })
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
@@ -17,17 +38,11 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL('/login?error=auth_error', requestUrl.origin))
     }
 
-    // Check if this is a password reset by looking for the recovery type
-    if (type === 'recovery' && data.session?.user?.aud === 'authenticated') {
-      // This is a password reset, redirect to reset password page
-      return NextResponse.redirect(new URL('/reset-password', requestUrl.origin))
-    }
+    // Successful auth, redirect to dashboard or specified next
+    const redirectUrl = next || '/dashboard'
+    return NextResponse.redirect(new URL(redirectUrl, requestUrl.origin))
   }
 
-  // If no code but we have a next parameter pointing to reset-password, redirect there
-  if (!code && next === '/reset-password') {
-    return NextResponse.redirect(new URL('/reset-password', requestUrl.origin))
-  }
-
-  return NextResponse.redirect(new URL(next, requestUrl.origin))
+  // No code and no valid request, redirect to login
+  return NextResponse.redirect(new URL('/login?error=invalid_request', requestUrl.origin))
 } 
