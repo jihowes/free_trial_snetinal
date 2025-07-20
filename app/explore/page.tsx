@@ -7,6 +7,24 @@ import { Logo } from '@/components/ui/Logo'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { Sparkles, DollarSign, Bell, LayoutGrid } from 'lucide-react'
+import type { Metadata } from 'next'
+import StructuredData from '@/components/StructuredData'
+
+export const metadata: Metadata = {
+  title: 'Explore Free Trials - Discover & Track Your Trials',
+  description: 'Browse hundreds of free trials from top services. Find new tools to try and track them all in one place. Never miss a trial expiration again.',
+  keywords: ['free trials', 'trial directory', 'software trials', 'subscription trials', 'productivity tools'],
+  openGraph: {
+    title: 'Explore Free Trials - Discover & Track Your Trials',
+    description: 'Browse hundreds of free trials from top services. Find new tools to try and track them all in one place.',
+    url: 'https://freetrialsentinel.com/explore',
+    images: ['/og-image.png'],
+  },
+  twitter: {
+    title: 'Explore Free Trials - Discover & Track Your Trials',
+    description: 'Browse hundreds of free trials from top services. Find new tools to try and track them all in one place.',
+  },
+}
 
 export default async function ExplorePage() {
   const supabase = createServerComponentClient({ cookies })
@@ -120,6 +138,7 @@ export default async function ExplorePage() {
           </div>
 
           {/* Main Content - Client Component for Filtering */}
+          <StructuredData type="trial-listing" data={{ trials }} />
           <ExploreClient 
             initialTrials={trials} 
             categories={categories} 
