@@ -6,6 +6,7 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   const next = requestUrl.searchParams.get('next') || '/dashboard'
+  const type = requestUrl.searchParams.get('type')
 
   if (code) {
     const supabase = createRouteHandlerClient({ cookies })
@@ -16,9 +17,9 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL('/login?error=auth_error', requestUrl.origin))
     }
 
-    // Check if this is a password reset
-    if (data.session?.user?.aud === 'authenticated' && data.session?.user?.app_metadata?.provider === 'email') {
-      // This is likely a password reset, redirect to reset password page
+    // Check if this is a password reset by looking for the recovery type
+    if (type === 'recovery' && data.session?.user?.aud === 'authenticated') {
+      // This is a password reset, redirect to reset password page
       return NextResponse.redirect(new URL('/reset-password', requestUrl.origin))
     }
   }

@@ -82,6 +82,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${outfit.variable} ${inter.variable}`} suppressHydrationWarning>
+      <head>
+        <meta name="web3-domain-verification" content="false" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Prevent MetaMask from injecting and trying to connect
+              if (typeof window !== 'undefined') {
+                window.ethereum = undefined;
+                window.web3 = undefined;
+              }
+            `,
+          }}
+        />
+      </head>
       <body>
         <ThemeProvider
           attribute="class"
