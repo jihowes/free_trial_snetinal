@@ -10,7 +10,13 @@ export async function GET(request: Request) {
 
   console.log('Auth callback debug:', { code: !!code, next, type, fullUrl: requestUrl.toString() })
 
-  // If we have a code, try to exchange it for a session
+  // If this is a password reset request, redirect directly to reset-password
+  if (type === 'recovery' || next === '/reset-password') {
+    console.log('Password reset detected, redirecting to reset-password')
+    return NextResponse.redirect(new URL('/reset-password', requestUrl.origin))
+  }
+
+  // If we have a code, try to exchange it for a session (for regular auth)
   if (code) {
     const supabase = createRouteHandlerClient({ cookies })
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
@@ -20,12 +26,6 @@ export async function GET(request: Request) {
     if (error) {
       console.error('Auth callback error:', error)
       return NextResponse.redirect(new URL('/login?error=auth_error', requestUrl.origin))
-    }
-
-    // If this is a password reset (type=recovery or next=/reset-password)
-    if (type === 'recovery' || next === '/reset-password') {
-      console.log('Password reset detected, redirecting to reset-password')
-      return NextResponse.redirect(new URL('/reset-password', requestUrl.origin))
     }
 
     // Regular auth success, redirect to dashboard or specified next
