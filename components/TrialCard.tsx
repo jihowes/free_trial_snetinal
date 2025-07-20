@@ -171,7 +171,7 @@ export function TrialCard({ id, service_name, end_date, cost, billing_frequency,
   if (!mounted) {
     return (
       <div className="w-full">
-        <Card className="relative overflow-hidden border-0 shadow-lg transition-all duration-300 bg-slate-800/20 border-slate-600/30 shadow-slate-500/10">
+        <Card className="relative overflow-hidden border-0 shadow-lg transition-all duration-300 bg-slate-800/20 border-slate-600/30 shadow-slate-500/10 min-h-[120px] md:min-h-[140px]">
           <div className="relative p-3 md:p-6">
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
@@ -187,6 +187,10 @@ export function TrialCard({ id, service_name, end_date, cost, billing_frequency,
                       <p className="text-xs md:text-sm text-slate-400">
                       Loading...
                     </p>
+                      {/* Placeholder for cost info to maintain height */}
+                      <div className="flex items-center gap-1 mt-1 min-h-[16px]">
+                        <span className="text-xs text-transparent">placeholder</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -219,7 +223,7 @@ export function TrialCard({ id, service_name, end_date, cost, billing_frequency,
       className="w-full"
     >
       <Card className={`
-        relative overflow-hidden border-0 shadow-lg transition-all duration-300 z-0
+        relative overflow-hidden border-0 shadow-lg transition-all duration-300 z-0 min-h-[120px] md:min-h-[140px]
         ${isUrgent 
           ? 'bg-gradient-to-r from-red-900/20 to-red-800/20 border-red-500/30 shadow-red-500/10' 
           : isWarning 
@@ -267,14 +271,16 @@ export function TrialCard({ id, service_name, end_date, cost, billing_frequency,
                         return date.toLocaleDateString('en-US', options)
                       })()}
                     </p>
-                    {/* Potential savings indicator */}
-                    {cost && cost > 0 && daysLeft >= 0 && (
-                      <div className="flex items-center gap-1 mt-1">
+                    {/* Cost information - always rendered to maintain consistent height */}
+                    <div className="flex items-center gap-1 mt-1 min-h-[16px]">
+                      {cost && cost > 0 && daysLeft >= 0 ? (
                         <span className="text-xs text-slate-500">
                           {typeof formatCurrency === 'function' ? formatCurrency(cost) : `$${cost.toFixed(2)}`}/{billing_frequency || 'month'}
                         </span>
-                      </div>
-                    )}
+                      ) : (
+                        <span className="text-xs text-transparent">placeholder</span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
