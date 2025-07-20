@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Button } from '@/components/ui/Button'
@@ -21,7 +21,6 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false)
   
   const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = createClientComponentClient()
 
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -43,12 +42,14 @@ export default function ResetPasswordPage() {
     }
 
     try {
-      const { error } = await supabase.auth.updateUser({
+      // Update the password
+      const { error: updateError } = await supabase.auth.updateUser({
         password: password
       })
 
-      if (error) {
-        setError(error.message)
+      if (updateError) {
+        console.error('Password update error:', updateError)
+        setError(updateError.message)
       } else {
         setSuccess(true)
         setTimeout(() => {
@@ -56,6 +57,7 @@ export default function ResetPasswordPage() {
         }, 2000)
       }
     } catch (error) {
+      console.error('Unexpected error:', error)
       setError('An unexpected error occurred')
     } finally {
       setLoading(false)

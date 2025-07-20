@@ -179,14 +179,14 @@ export function TrialCard({ id, service_name, end_date, cost, billing_frequency,
                   <div className="flex items-center space-x-2 md:space-x-3 flex-1 min-w-0">
                     <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center bg-slate-500/20 text-slate-400 flex-shrink-0">
                       <Calendar className="w-4 h-4 md:w-5 md:h-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
+                  </div>
+                  <div className="flex-1 min-w-0">
                       <h3 className="text-base md:text-lg font-semibold text-white truncate">
-                        {service_name}
-                      </h3>
+                      {service_name}
+                    </h3>
                       <p className="text-xs md:text-sm text-slate-400">
-                        Loading...
-                      </p>
+                      Loading...
+                    </p>
                     </div>
                   </div>
                 </div>

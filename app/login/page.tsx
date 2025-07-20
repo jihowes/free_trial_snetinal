@@ -7,18 +7,11 @@ import { motion } from 'framer-motion'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Card, CardContent } from '@/components/ui/Card'
 import { Logo } from '@/components/ui/Logo'
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle,
-  DialogTrigger 
-} from '@/components/ui/Dialog'
-import { Eye, EyeOff, Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react'
 import FantasyBackgroundWrapper from '@/components/FantasyBackgroundWrapper'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/Dialog'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -54,37 +47,10 @@ export default function LoginPage() {
       const prefillEmail = localStorage.getItem('prefillEmail')
       if (prefillEmail) {
         setEmail(prefillEmail)
-        setResetEmail(prefillEmail)
         localStorage.removeItem('prefillEmail')
       }
     }
   }, [])
-
-  // Handle password reset code parameter
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search)
-      const code = urlParams.get('code')
-      const next = urlParams.get('next')
-      const error = urlParams.get('error')
-      
-      console.log('Login page URL params:', { code: !!code, next, error, fullUrl: window.location.href })
-      
-      if (code) {
-        // This is a password reset link, redirect to reset-password page
-        console.log('Code detected, redirecting to reset-password with code:', code)
-        window.location.href = `/reset-password?code=${code}`
-        return
-      } else if (next === '/reset-password') {
-        // This is a redirect to reset-password without code, go there directly
-        console.log('Redirecting to reset-password without code')
-        window.location.href = '/reset-password'
-        return
-      } else if (error) {
-        console.log('Login page has error:', error)
-      }
-    }
-  }, []) // Remove router dependency to prevent multiple redirects
 
   // Rotate through witty messages
   useEffect(() => {

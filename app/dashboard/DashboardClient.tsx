@@ -535,7 +535,7 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
                       }
                       return total
                     }, 0)
-
+                    
                     const statusConfig = {
                       kept: { 
                         icon: '💰', 
@@ -632,7 +632,7 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
                             </Button>
                           </div>
                         </div>
-
+                        
                         {/* Grouped Trial Lists */}
                         <div className="space-y-4">
                           {Object.entries(groupedTrials).map(([status, trials]) => {
@@ -683,63 +683,63 @@ function DashboardContent({ trials, user }: DashboardClientProps) {
                                       <div className="p-3 md:p-4">
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                                           {trials.map((trial, index) => {
-                                            // Calculate money saved for this trial
-                                            const moneySaved = (status === 'cancelled' || status === 'expired') && trial.cost 
-                                              ? trial.cost 
-                                              : (status === 'cancelled' || status === 'expired') 
-                                                ? 10 // Estimated $10 if no cost set
-                                                : 0
-                                            
-                                            return (
-                                              <motion.div
-                                                key={trial.id}
-                                                initial={{ opacity: 0, scale: 0.95 }}
-                                                animate={{ opacity: 1, scale: 1 }}
+                            // Calculate money saved for this trial
+                            const moneySaved = (status === 'cancelled' || status === 'expired') && trial.cost 
+                              ? trial.cost 
+                              : (status === 'cancelled' || status === 'expired') 
+                                ? 10 // Estimated $10 if no cost set
+                                : 0
+                            
+                            return (
+                              <motion.div
+                                key={trial.id}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
                                                 transition={{ delay: index * 0.05, duration: 0.3 }}
                                                 className="p-3 rounded-lg border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm hover:bg-slate-800/50 transition-all duration-300"
                                               >
                                                 <div className="flex items-start justify-between mb-2">
                                                   <h4 className="font-semibold text-white text-sm">{trial.service_name}</h4>
-                                                  <Button
-                                                    variant="secondary"
-                                                    size="sm"
-                                                    onClick={() => handleToggleLike(trial.id, trial.liked || false)}
-                                                    disabled={loading}
-                                                    className={`p-1 rounded transition-all duration-200 ${
-                                                      trial.liked 
-                                                        ? 'text-pink-400 hover:text-pink-300 hover:bg-pink-500/20' 
-                                                        : 'text-slate-400 hover:text-pink-400 hover:bg-pink-500/20'
-                                                    }`}
-                                                    title={trial.liked ? 'Remove from favorites' : 'Add to favorites'}
-                                                  >
-                                                    <Heart className={`w-3 h-3 ${trial.liked ? 'fill-current' : ''}`} />
-                                                  </Button>
-                                                </div>
-                                                <div className="flex items-center justify-between mb-2">
-                                                  <span className={`text-xs px-2 py-1 rounded-full ${config.bgColor} ${config.color}`}>
-                                                    {config.label}
-                                                  </span>
-                                                  <span className="text-xs text-slate-400">
+                                    <Button
+                                      variant="secondary"
+                                      size="sm"
+                                      onClick={() => handleToggleLike(trial.id, trial.liked || false)}
+                                      disabled={loading}
+                                      className={`p-1 rounded transition-all duration-200 ${
+                                        trial.liked 
+                                          ? 'text-pink-400 hover:text-pink-300 hover:bg-pink-500/20' 
+                                          : 'text-slate-400 hover:text-pink-400 hover:bg-pink-500/20'
+                                      }`}
+                                      title={trial.liked ? 'Remove from favorites' : 'Add to favorites'}
+                                    >
+                                      <Heart className={`w-3 h-3 ${trial.liked ? 'fill-current' : ''}`} />
+                                    </Button>
+                                </div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className={`text-xs px-2 py-1 rounded-full ${config.bgColor} ${config.color}`}>
+                                    {config.label}
+                                  </span>
+                                  <span className="text-xs text-slate-400">
                                                     {new Date(trial.end_date).toLocaleDateString('en-US', { timeZone: 'UTC' })}
-                                                  </span>
-                                                </div>
-                                                {/* Money saved display */}
-                                                {(status === 'cancelled' || status === 'expired') && (
-                                                  <div className="flex items-center justify-between">
-                                                    <span className="text-xs text-green-400 font-medium">
-                                                      Saved: {formatCurrency(moneySaved)}
-                                                    </span>
-                                                    {trial.cost ? (
-                                                      <span className="text-xs text-slate-500">
-                                                        {formatCurrency(trial.cost)}/{trial.billing_frequency || 'month'}
-                                                      </span>
-                                                    ) : (
-                                                      <span className="text-xs text-slate-500">
-                                                        Estimated
-                                                      </span>
-                                                    )}
-                                                  </div>
-                                                )}
+                                  </span>
+                                </div>
+                                {/* Money saved display */}
+                                {(status === 'cancelled' || status === 'expired') && (
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs text-green-400 font-medium">
+                                      Saved: {formatCurrency(moneySaved)}
+                                    </span>
+                                    {trial.cost ? (
+                                      <span className="text-xs text-slate-500">
+                                        {formatCurrency(trial.cost)}/{trial.billing_frequency || 'month'}
+                                      </span>
+                                    ) : (
+                                      <span className="text-xs text-slate-500">
+                                        Estimated
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
                                               </motion.div>
                                             )
                                           })}
