@@ -73,16 +73,12 @@ export default function LoginPage() {
       if (code) {
         // This is a password reset link, redirect to reset-password page
         console.log('Code detected, redirecting to reset-password with code:', code)
-        setTimeout(() => {
-          router.push(`/reset-password?code=${code}`)
-        }, 100)
+        window.location.href = `/reset-password?code=${code}`
         return
       } else if (next === '/reset-password') {
         // This is a redirect to reset-password without code, go there directly
         console.log('Redirecting to reset-password without code')
-        setTimeout(() => {
-          router.push('/reset-password')
-        }, 100)
+        window.location.href = '/reset-password'
         return
       } else if (error) {
         console.log('Login page has error:', error)
