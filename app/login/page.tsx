@@ -101,7 +101,7 @@ export default function LoginPage() {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${location.origin}/auth/callback`,
+        redirectTo: `${location.origin}/reset-password`,
       })
 
       if (error) {
@@ -280,6 +280,22 @@ export default function LoginPage() {
                       </button>
                     </motion.div>
 
+                    {/* Forgot Password Link */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.45 }}
+                      className="text-right"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setDialogOpen(true)}
+                        className="text-sm text-slate-400 hover:text-fantasy-crimson transition-colors duration-200"
+                      >
+                        Forgot your password?
+                      </button>
+                    </motion.div>
+
                     {error && (
                       <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
@@ -334,6 +350,69 @@ export default function LoginPage() {
           </motion.div>
         </motion.div>
       </div>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="bg-fantasy-ash/95 backdrop-blur-sm border border-fantasy-gold/20">
+          <DialogHeader>
+            <DialogTitle className="text-white font-outfit">Reset Your Password</DialogTitle>
+            <DialogDescription className="text-slate-300">
+              Enter your email address and we'll send you a link to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            <Input
+              label="Email"
+              type="email"
+              placeholder="Enter your email address"
+              value={resetEmail}
+              onChange={(e) => setResetEmail(e.target.value)}
+              required
+            />
+            
+            {resetError && (
+              <div className="flex items-center space-x-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                <AlertCircle className="w-4 h-4 text-destructive" />
+                <p className="text-sm text-destructive">{resetError}</p>
+              </div>
+            )}
+            
+            {resetMessage && (
+              <div className="flex items-center space-x-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                <CheckCircle className="w-4 h-4 text-green-500" />
+                <p className="text-sm text-green-500">{resetMessage}</p>
+              </div>
+            )}
+            
+            <div className="flex space-x-3 pt-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setDialogOpen(false)}
+                className="flex-1 border-slate-600/50 text-slate-300 hover:bg-slate-700/50"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={resetLoading}
+                className="flex-1 bg-gradient-to-r from-fantasy-crimson to-fantasy-molten hover:from-fantasy-molten hover:to-fantasy-crimson text-white"
+              >
+                {resetLoading ? (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
+                  />
+                ) : (
+                  'Send Reset Link'
+                )}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </FantasyBackgroundWrapper>
   )
 } 
