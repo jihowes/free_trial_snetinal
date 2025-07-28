@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
@@ -11,7 +11,7 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { Logo } from '@/components/ui/Logo'
 import { Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react'
 import FantasyBackgroundWrapper from '@/components/FantasyBackgroundWrapper'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/Dialog'
+import ForgotPasswordDialog from '@/components/ForgotPasswordDialog'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -19,13 +19,11 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [resetEmail, setResetEmail] = useState('')
-  const [resetLoading, setResetLoading] = useState(false)
-  const [resetMessage, setResetMessage] = useState('')
-  const [resetError, setResetError] = useState('')
+  const [success, setSuccess] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClientComponentClient()
 
   const wittyMessages = [
@@ -41,7 +39,7 @@ export default function LoginPage() {
     "Because forgetting = paying. And paying sucks."
   ]
 
-  // Check for pre-filled email when component mounts
+  // Check for pre-filled email and success message when component mounts
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const prefillEmail = localStorage.getItem('prefillEmail')
@@ -50,7 +48,17 @@ export default function LoginPage() {
         localStorage.removeItem('prefillEmail')
       }
     }
-  }, [])
+
+    // Check for success message from password reset
+    const message = searchParams.get('message')
+    if (message === 'password-reset-success') {
+      setSuccess('Your password has been successfully reset! You can now sign in with your new password.')
+      // Clear the message from URL
+      const url = new URL(window.location.href)
+      url.searchParams.delete('message')
+      window.history.replaceState({}, '', url.toString())
+    }
+  }, [searchParams])
 
   // Rotate through witty messages
   useEffect(() => {
@@ -82,31 +90,6 @@ export default function LoginPage() {
       setError('An unexpected error occurred')
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setResetLoading(true)
-    setResetError('')
-    setResetMessage('')
-
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail)
-
-      if (error) {
-        setResetError(error.message)
-      } else {
-        setResetMessage('Password reset link sent! Check your email.')
-        setTimeout(() => {
-          setDialogOpen(false)
-          setResetMessage('')
-        }, 3000)
-      }
-    } catch (error) {
-      setResetError('An unexpected error occurred')
-    } finally {
-      setResetLoading(false)
     }
   }
 
@@ -286,6 +269,17 @@ export default function LoginPage() {
                       </button>
                     </motion.div>
 
+                    {success && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="flex items-center space-x-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20"
+                      >
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        <p className="text-sm text-green-500">{success}</p>
+                      </motion.div>
+                    )}
+
                     {error && (
                       <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
@@ -342,67 +336,7 @@ export default function LoginPage() {
       </div>
 
       {/* Forgot Password Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-fantasy-ash/95 backdrop-blur-sm border border-fantasy-gold/20">
-          <DialogHeader>
-            <DialogTitle className="text-white font-outfit">Reset Your Password</DialogTitle>
-            <DialogDescription className="text-slate-300">
-              Enter your email address and we'll send you a link to reset your password.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <form onSubmit={handleForgotPassword} className="space-y-4">
-            <Input
-              label="Email"
-              type="email"
-              placeholder="Enter your email address"
-              value={resetEmail}
-              onChange={(e) => setResetEmail(e.target.value)}
-              required
-            />
-            
-            {resetError && (
-              <div className="flex items-center space-x-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-                <AlertCircle className="w-4 h-4 text-destructive" />
-                <p className="text-sm text-destructive">{resetError}</p>
-              </div>
-            )}
-            
-            {resetMessage && (
-              <div className="flex items-center space-x-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                <p className="text-sm text-green-500">{resetMessage}</p>
-              </div>
-            )}
-            
-            <div className="flex space-x-3 pt-2">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setDialogOpen(false)}
-                className="flex-1 border-slate-600/50 text-slate-300 hover:bg-slate-700/50"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={resetLoading}
-                className="flex-1 bg-gradient-to-r from-fantasy-crimson to-fantasy-molten hover:from-fantasy-molten hover:to-fantasy-crimson text-white"
-              >
-                {resetLoading ? (
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
-                  />
-                ) : (
-                  'Send Reset Link'
-                )}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <ForgotPasswordDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </FantasyBackgroundWrapper>
   )
 } 
