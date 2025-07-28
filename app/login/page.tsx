@@ -143,15 +143,7 @@ export default function LoginPage() {
               <Logo size="xl" containerSize="xl" className="mx-auto mb-6" />
             </motion.div>
             
-            <motion.div variants={itemVariants} className="space-y-4 pl-8">
-              <h1 className="text-4xl font-bold text-white font-outfit text-left">
-                Welcome to Sentinel
-              </h1>
-              <div className="text-xl text-slate-300 text-left space-y-2">
-                <p>Your intelligent guardian against trial expiration.</p>
-                <p>Never miss a deadline again.</p>
-              </div>
-            </motion.div>
+
 
             <motion.div variants={itemVariants} className="space-y-4 pl-24">
               <div className="text-slate-400">

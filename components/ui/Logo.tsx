@@ -66,7 +66,7 @@ export function Logo({ size = 'md', containerSize, className = '' }: LogoProps) 
         <h1 className="text-4xl font-black tracking-tight text-gray-200">
           FREE TRIAL <span className="text-orange-500">SENTINEL</span>
         </h1>
-        <p className="text-sm text-gray-400 font-semibold tracking-wider uppercase mt-1">
+        <p className="text-sm text-gray-400 font-semibold tracking-wider uppercase mt-1 whitespace-nowrap">
           the all seeing eye of the free trial
         </p>
       </div>

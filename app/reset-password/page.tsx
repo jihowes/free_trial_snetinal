@@ -126,9 +126,9 @@ export default function ResetPasswordPage() {
             className="w-full max-w-md"
           >
             <Card className="border-0 shadow-xl bg-fantasy-ash/80 backdrop-blur-sm border border-fantasy-gold/20">
-              <CardContent className="p-8">
-                <div className="text-center space-y-4">
-                  <Logo size="lg" containerSize="lg" className="mx-auto mb-4" />
+              <CardContent className="p-8 pt-12 pb-12">
+                <div className="text-center space-y-6">
+                  <Logo size="lg" containerSize="lg" className="mx-auto mb-6" />
                   <div className="flex items-center justify-center space-x-2">
                     <Loader2 className="w-5 h-5 animate-spin text-fantasy-crimson" />
                     <span className="text-slate-300">Processing reset link...</span>
@@ -152,9 +152,9 @@ export default function ResetPasswordPage() {
             className="w-full max-w-md"
           >
             <Card className="border-0 shadow-xl bg-fantasy-ash/80 backdrop-blur-sm border border-fantasy-gold/20">
-              <CardContent className="p-8">
-                <div className="text-center space-y-4">
-                  <Logo size="lg" containerSize="lg" className="mx-auto mb-4" />
+              <CardContent className="p-8 pt-12 pb-12">
+                <div className="text-center space-y-6">
+                  <Logo size="lg" containerSize="lg" className="mx-auto mb-6" />
                   <div className="flex items-center justify-center space-x-2 p-4 rounded-lg bg-destructive/10 border border-destructive/20">
                     <AlertCircle className="w-5 h-5 text-destructive" />
                     <p className="text-destructive font-medium">Reset Link Invalid</p>
@@ -186,10 +186,10 @@ export default function ResetPasswordPage() {
           className="w-full max-w-md"
         >
           <Card className="border-0 shadow-xl bg-fantasy-ash/80 backdrop-blur-sm border border-fantasy-gold/20">
-            <CardContent className="p-8">
+            <CardContent className="p-8 pt-12 pb-12">
               {/* Logo and Title */}
-              <div className="text-center mb-6">
-                <Logo size="lg" containerSize="lg" className="mx-auto mb-4" />
+              <div className="text-center mb-8">
+                <Logo size="lg" containerSize="lg" className="mx-auto mb-6" />
                 <h1 className="text-2xl font-bold text-white font-outfit">
                   Set New Password
                 </h1>
